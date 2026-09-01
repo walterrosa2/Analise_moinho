@@ -79,7 +79,7 @@ class Settings(BaseSettings):
     def db_url(self) -> str:
         """URL SQLAlchemy. `DATABASE_URL` explicito tem precedencia com normalizacao de driver."""
         if self.database_url:
-            raw = self.database_url.strip()
+            raw = self.database_url.strip().rstrip(")\"',; \t\n\r")
             # Railway / Heroku passam postgres:// ou postgresql:// sem o driver psycopg v3
             if raw.startswith("postgres://"):
                 return "postgresql+psycopg://" + raw[len("postgres://"):]

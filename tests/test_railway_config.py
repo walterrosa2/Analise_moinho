@@ -35,3 +35,10 @@ def test_server_port_prioriza_env_port() -> None:
     # Quando não há PORT, usa app_port
     s2 = Settings(port=None, app_port=8501)
     assert s2.server_port == 8501
+
+
+def test_database_url_sanitiza_parenteses_espurios() -> None:
+    # Caso o usuário cole ${{Postgres.DATABASE_URL}}) com parêntese acidental no final
+    s = Settings(database_url="postgresql://postgres:pass@postgres.railway.internal:5432/railway)")
+    assert s.db_url == "postgresql+psycopg://postgres:pass@postgres.railway.internal:5432/railway"
+
