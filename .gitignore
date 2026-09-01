@@ -1,0 +1,50 @@
+# --- Segredos ---
+.env
+*.pem
+*.key
+secrets/
+
+# --- Dados (planilhas brutas fora; parquets consolidados entram para seed em nuvem) ---
+data/input/*
+!data/input/.gitkeep
+data/parquet/*
+!data/parquet/.gitkeep
+!data/parquet/*.parquet
+data/exports/*
+!data/exports/.gitkeep
+*.xlsx
+*.xls
+*.csv
+!tests/fixtures/**/*.csv
+
+# --- Logs e artefatos de execução ---
+logs/
+artifacts/*.json
+artifacts/*.png
+artifacts/*.html
+
+# --- Python ---
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# --- Streamlit ---
+.streamlit/secrets.toml
+
+# --- Quarentena ---
+_trash/
+
+# --- IDE / SO ---
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+~$*

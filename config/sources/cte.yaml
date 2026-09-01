@@ -1,0 +1,47 @@
+# Contrato de dados: cte
+# Gerado por scripts/gen_source_contracts.py a partir da leitura REAL do arquivo.
+# Se uma coluna obrigatoria faltar, a carga FALHA de forma visivel (nunca silenciosa).
+
+source_id: cte
+load_order: 6
+filename: "CTE Venda 012023 - 072026 V1.xlsx"
+filename_pattern: "CTE Venda*.xlsx"
+sheet: "CTE Venda 012023 - 072026"
+raw_table: cte
+descricao: >-
+  CHAVECTE repete 1.133x: PK e surrogate frete_id. ORDEMCARGA invalida em 55,89%.
+
+# Perfil observado em 2026-09-01
+perfil_observado:
+  linhas: 32789
+  colunas: 16
+  sha256_arquivo: "9f12f012ff3c94cc8636700e06848cde6f8cbc23eb38be2531306ba40ae8ff69"
+
+# Sem grao unico verificado nesta fonte (ver docs/source_profile.md)
+grain: []
+
+required_columns:
+  - "CODEMP"
+  - "NUNOTA"
+  - "CHAVECTE"
+  - "CODPARC"
+  - "VLRNOTA"
+  - "CHAVES_NFE_VENDA"
+
+all_columns:
+  - "CODEMP"
+  - "NUNOTA"
+  - "NUMNOTA"
+  - "SERIENOTA"
+  - "DTNEG"
+  - "DTENTSAI"
+  - "DTFATUR"
+  - "CODTIPOPER"
+  - "DESCROPER"
+  - "CHAVECTE"
+  - "ORDEMCARGA"
+  - "CODPARC"
+  - "NOMEPARC"
+  - "VLRNOTA"
+  - "NOTAS_VENDA"
+  - "CHAVES_NFE_VENDA"

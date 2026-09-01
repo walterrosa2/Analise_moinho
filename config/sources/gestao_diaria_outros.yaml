@@ -1,0 +1,37 @@
+# Contrato de dados: gestao_diaria_outros
+# Gerado por scripts/gen_source_contracts.py a partir da leitura REAL do arquivo.
+# Se uma coluna obrigatoria faltar, a carga FALHA de forma visivel (nunca silenciosa).
+
+source_id: gestao_diaria_outros
+load_order: 11
+filename: "161 - Gestão Diária Comercial (OUTROS) V1.xlsx"
+filename_pattern: "161 - Gestão Diária Comercial (OUTROS)*.xlsx"
+sheet: "Planilha1"
+raw_table: gestao_diaria_outros
+descricao: >-
+  Despesas comerciais mensais. Semantica de ORC/ANT pendente (Q-03).
+
+# Perfil observado em 2026-09-01
+perfil_observado:
+  linhas: 396
+  colunas: 6
+  sha256_arquivo: "17e19354cc72b2dca630cfa598358520e08d1b66459c261002cfa96d2e26eb8e"
+
+grain:
+  - "ANO"
+  - "MES"
+  - "DESCRICAO"
+
+required_columns:
+  - "ANO"
+  - "MES"
+  - "DESCRICAO"
+  - "ATUAL"
+
+all_columns:
+  - "ANO"
+  - "MES"
+  - "DESCRICAO"
+  - "ORC/ANT"
+  - "ATUAL"
+  - "%VAR"

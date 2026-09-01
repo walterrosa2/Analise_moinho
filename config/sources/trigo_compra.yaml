@@ -1,0 +1,34 @@
+# Contrato de dados: trigo_compra
+# Gerado por scripts/gen_source_contracts.py a partir da leitura REAL do arquivo.
+# Se uma coluna obrigatoria faltar, a carga FALHA de forma visivel (nunca silenciosa).
+
+source_id: trigo_compra
+load_order: 8
+filename: "Relatorio Compra de Trigo - Max.xlsx"
+filename_pattern: "Relatorio Compra de Trigo - Max.xlsx*.xlsx"
+sheet: "Compra"
+raw_table: trigo_compra
+descricao: >-
+  Cabecalho de duas linhas com celulas mescladas: parser posicional dedicado.
+
+# Perfil observado em 2026-09-01
+perfil_observado:
+  linhas: 35
+  colunas: 9
+  sha256_arquivo: "4884a4c12e099de0e8f01298f825dbd4570a2744d37cf955c16353ad658b1bd8"
+
+# Sem grao unico verificado nesta fonte (ver docs/source_profile.md)
+grain: []
+
+required_columns: []
+
+all_columns:
+  - "Compra de Trigo _ Jan/24 até Julho/26 "
+  - "__UNNAMED__1"
+  - "__UNNAMED__2"
+  - "__UNNAMED__3"
+  - "__UNNAMED__4"
+  - "__UNNAMED__5"
+  - "__UNNAMED__6"
+  - "__UNNAMED__7"
+  - "__UNNAMED__8"

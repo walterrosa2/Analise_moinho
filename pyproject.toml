@@ -1,0 +1,34 @@
+[project]
+name = "moinho-analytics"
+version = "1.0.0"
+description = "Plataforma Analítica do Diagnóstico Comercial — Moinho Sete Irmãos"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-q --strict-markers"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+exclude = [".venv", "data", "logs", "artifacts", "_trash"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "C4", "SIM"]
+ignore = [
+    "E501",   # comprimento tratado pelo formatter
+    "B008",   # chamada em default: padrão comum em Streamlit
+    "N806",   # nomes em maiúsculo dentro de função (constantes locais)
+    "SIM108", # ternário nem sempre é mais legível
+    "C408",   # dict(...) em kwargs é a convenção do Plotly, mais legível que literais aninhados
+]
+
+[tool.ruff.lint.per-file-ignores]
+"app/pages/*.py" = ["E402"]   # st.set_page_config precisa vir antes dos imports
+"app/main.py" = ["E402"]
+"scripts/*.py" = ["E402"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["src", "app"]

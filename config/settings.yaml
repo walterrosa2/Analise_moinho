@@ -1,0 +1,131 @@
+# =====================================================================
+# Parâmetros analíticos configuráveis
+# =====================================================================
+# Tudo aqui é regra de negócio discutível. Nada disso pode virar hardcode.
+# =====================================================================
+
+versao: "1.0"
+
+# ---------------------------------------------------------------------
+# Operações
+# ---------------------------------------------------------------------
+operacoes:
+  # Movimentam tonelagem com VLRTOT = 0. Incluí-las no PMV rebaixa
+  # artificialmente o preço médio (RN-04, Q-11).
+  sem_receita:
+    - 3107   # SAIDA BONIFICAÇÃO
+    - 3102   # SAIDA AMOSTRA, DOACAO OU BRINDE
+  # Devolução é identificada por TIPMOV = 'D' (100% negativo na origem)
+  tipmov_devolucao: "D"
+  tipmov_venda: "V"
+  # CT-e que não é frete de venda (Q-09)
+  cte_nao_frete_venda:
+    - 4103   # LANCTO FRETE S/ COMPRA INSUMOS/REMESSAS
+  cte_anulado:
+    - 3111   # ENTRADA CTE ANULADO
+
+# ---------------------------------------------------------------------
+# Preço médio de venda
+# ---------------------------------------------------------------------
+pmv:
+  # Excluir operações sem receita do cálculo (numerador e denominador)
+  excluir_operacoes_sem_receita: true
+  # Denominador: tonelada líquida
+  denominador: tonliq
+
+# ---------------------------------------------------------------------
+# Custos
+# ---------------------------------------------------------------------
+custos:
+  bases:
+    - id: cusmed
+      label: "CUSMED — Custo médio"
+    - id: cusmedicm
+      label: "CUSMEDICM — Custo médio com ICMS"
+    - id: cussemicm
+      label: "CUSSEMICM — Custo médio sem ICMS"
+    - id: cusrep
+      label: "CUSREP — Custo de reposição"
+    - id: cusger
+      label: "CUSGER — Custo gerencial"
+    - id: cusvariavel
+      label: "CUSVARIAVEL — Custo variável"
+  base_padrao: cusger
+  # NENHUMA base é "o custo oficial" (RN-07, Q-04)
+  homologado: false
+  aviso: >-
+    Os conceitos de custo ainda não foram homologados economicamente pela
+    Controladoria. Todas as análises de margem são exploratórias e o
+    resultado deve ser lido como "Margem Proxy — Base <CUSTO>".
+  # As-of join
+  asof:
+    campo_data_venda: DTFATUR
+    # Cascata de correspondência (RN-07)
+    cascata:
+      - [codprod, codemp, codlocal]
+      - [codprod, codemp]
+      - [codprod]
+    # Alerta quando o custo encontrado for muito antigo
+    idade_maxima_alerta_dias: 90
+
+# ---------------------------------------------------------------------
+# Logística
+# ---------------------------------------------------------------------
+logistica:
+  metodo_rateio_padrao: TON_WEIGHT
+  metodo_rateio_fallback: EQUAL_SPLIT
+  # Percentil usado para sinalizar rota cara nos insights
+  percentil_alerta_rs_por_ton: 90
+  # Modalidades de frete (RN-05)
+  cif_fob:
+    C: "CIF — frete por conta do remetente"
+    F: "FOB — frete por conta do destinatário"
+    R: "Transporte próprio do remetente"
+    S: "Sem frete"
+    T: "T — não documentado na origem"
+
+# ---------------------------------------------------------------------
+# Positivados
+# ---------------------------------------------------------------------
+positivados:
+  # Análises de tendência começam aqui por padrão (RN-09)
+  analise_inicio: "2021-05"
+  # Meses de implantação do ERP, sinalizados mas nunca excluídos
+  implantacao_erp:
+    - "2021-02"
+    - "2021-03"
+    - "2021-04"
+  janelas_recompra_dias: [30, 60, 90, 180, 365]
+
+# ---------------------------------------------------------------------
+# Reconciliação
+# ---------------------------------------------------------------------
+reconciliacao:
+  revenue_pct_tolerance: 0.5
+  volume_pct_tolerance: 0.5
+  # A base transacional cobre 2023+; o 161 cobre 2020+.
+  # Reconciliar apenas a janela comum (RN-11, Q-12).
+  janela_comum:
+    inicio: "2023-01"
+    fim: "2026-07"
+  # NUNCA ajustar dados para bater
+  permitir_ajuste_automatico: false
+
+# ---------------------------------------------------------------------
+# Insights
+# ---------------------------------------------------------------------
+insights:
+  top_n_padrao: 10
+  variacao_minima_relevante_pct: 10.0
+  concentracao_alerta_pct: 50.0     # Top 5 acima disso -> alerta
+  queda_cliente_alerta_pct: 30.0
+  inatividade_dias: 90
+
+# ---------------------------------------------------------------------
+# Interface
+# ---------------------------------------------------------------------
+ui:
+  top_n_opcoes: [5, 10, 20, 50, 100]
+  linhas_tabela_padrao: 50
+  formato_data: "DD/MM/YYYY"
+  locale_numero: pt_BR

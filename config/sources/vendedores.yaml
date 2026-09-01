@@ -1,0 +1,46 @@
+# Contrato de dados: vendedores
+# Gerado por scripts/gen_source_contracts.py a partir da leitura REAL do arquivo.
+# Se uma coluna obrigatoria faltar, a carga FALHA de forma visivel (nunca silenciosa).
+
+source_id: vendedores
+load_order: 3
+filename: "VENDAS-DEV-RCA-CUSTOS 012023-072026 V1.xlsx"
+filename_pattern: "VENDAS-DEV-RCA-CUSTOS*.xlsx"
+sheet: "Vendedor_Supervisor"
+raw_table: vendedores
+descricao: >-
+  Cadastro historico: 458 codigos, apenas 34 com movimento.
+
+# Perfil observado em 2026-09-01
+perfil_observado:
+  linhas: 458
+  colunas: 17
+  sha256_arquivo: "9ea2fda7d5a3ecfe3f7d33410642d4bb438e5e07212dc1d1f39fec3ec7ac9eae"
+
+grain:
+  - "CODVEND"
+
+required_columns:
+  - "CODVEND"
+  - "APELIDO_VENDEDOR"
+  - "TipoVend"
+  - "VENDEDOR_ATIVO"
+
+all_columns:
+  - "CODVEND"
+  - "APELIDO_VENDEDOR"
+  - "TipoVend"
+  - "VENDEDOR_ATIVO"
+  - "CODPARC"
+  - "NOMEPARC"
+  - "RAZAO_SOCIAL"
+  - "CNPJ_CPF"
+  - "EMAIL"
+  - "TELEFONE"
+  - "CEP"
+  - "NUMERO"
+  - "COMPLEMENTO"
+  - "CIDADE"
+  - "ESTADO"
+  - "CODREGIAO"
+  - "REGIAO"

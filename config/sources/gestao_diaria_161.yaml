@@ -1,0 +1,46 @@
+# Contrato de dados: gestao_diaria_161
+# Gerado por scripts/gen_source_contracts.py a partir da leitura REAL do arquivo.
+# Se uma coluna obrigatoria faltar, a carga FALHA de forma visivel (nunca silenciosa).
+
+source_id: gestao_diaria_161
+load_order: 10
+filename: "161 - Gestão Diária Comercial V1.xlsx"
+filename_pattern: "161 - Gestão Diária Comercial*.xlsx"
+sheet: "Planilha1"
+raw_table: gestao_diaria_161
+descricao: >-
+  Camada gerencial agregada. Usada para reconciliacao, nunca como base causal.
+
+# Perfil observado em 2026-09-01
+perfil_observado:
+  linhas: 1545
+  colunas: 11
+  sha256_arquivo: "b1f1af6b7c056cdc459630f6b53a19bc7b40954f08c073e127e9d55746994b2d"
+
+grain:
+  - "ANO"
+  - "MES"
+  - "TIPO"
+  - "COD_CLA"
+
+required_columns:
+  - "ANO"
+  - "MES"
+  - "TIPO"
+  - "COD_CLA"
+  - "DESC_CLA"
+  - "VALOR"
+  - "TONELADA"
+
+all_columns:
+  - "ANO"
+  - "MES"
+  - "TIPO"
+  - "COD_CLA"
+  - "DESC_CLA"
+  - "VALOR"
+  - "PERC_ATING_VLR"
+  - "TONELADA"
+  - "PERC_ATING_TON"
+  - "MARKUP"
+  - "PC_MEDIO"

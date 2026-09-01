@@ -1,0 +1,95 @@
+# Contrato de dados: vendas_dev
+# Gerado por scripts/gen_source_contracts.py a partir da leitura REAL do arquivo.
+# Se uma coluna obrigatoria faltar, a carga FALHA de forma visivel (nunca silenciosa).
+
+source_id: vendas_dev
+load_order: 1
+filename: "VENDAS-DEV-RCA-CUSTOS 012023-072026 V1.xlsx"
+filename_pattern: "VENDAS-DEV-RCA-CUSTOS*.xlsx"
+sheet: "Dados Vend_Dev 012023-072026"
+raw_table: vendas_dev
+descricao: >-
+  Fonte principal da plataforma. Grao NUNOTA+SEQUENCIA confirmado unico.
+
+# Perfil observado em 2026-09-01
+perfil_observado:
+  linhas: 204037
+  colunas: 55
+  sha256_arquivo: "9ea2fda7d5a3ecfe3f7d33410642d4bb438e5e07212dc1d1f39fec3ec7ac9eae"
+
+grain:
+  - "NUNOTA"
+  - "SEQUENCIA"
+
+required_columns:
+  - "NUNOTA"
+  - "SEQUENCIA"
+  - "CODEMP"
+  - "CODPROD"
+  - "CODPARC"
+  - "CODVEND"
+  - "DTNEG"
+  - "DTFATUR"
+  - "TIPMOV"
+  - "CODTIPOPER"
+  - "VLRTOT"
+  - "TONLIQ"
+  - "VLRNOTA"
+  - "CHAVENFE"
+
+all_columns:
+  - "CODEMP"
+  - "NUNOTA"
+  - "NUMNOTA"
+  - "CHAVENFE"
+  - "DTNEG"
+  - "DTFATUR"
+  - "DTENTSAI"
+  - "CODTIPOPER"
+  - "DESCROPER"
+  - "TIPMOV"
+  - "CIF_FOB"
+  - "VLRNOTA"
+  - "ACORDO"
+  - "OBSERVACAONOTA"
+  - "CIDORIGEM"
+  - "CIDDESTINO"
+  - "UFORIGEM"
+  - "UFDESTINO"
+  - "VLRFRETE_RATEADO_NOTA"
+  - "SEQUENCIA"
+  - "CODPROD"
+  - "DESCRPROD"
+  - "CONTROLE"
+  - "CODCFO"
+  - "CODLOCALORIG"
+  - "CODTRIB"
+  - "PERCCOM"
+  - "VLRCOM"
+  - "CODVOL"
+  - "QTD"
+  - "VLRUNIT"
+  - "PESOLIQ"
+  - "TONLIQ"
+  - "PESOBRUTO"
+  - "TONBRUTO"
+  - "VLRTOT"
+  - "VLRDESC"
+  - "VLRREPRED"
+  - "VLRICMS"
+  - "VLRSUBST"
+  - "ORDEMCARGA"
+  - "CIF_FOB_ORDEMCARGA"
+  - "CODPARCTRANSP"
+  - "CODREG"
+  - "NOMEREG"
+  - "VLRFRETE_ORDEMCARGA"
+  - "CODVEND"
+  - "CODSUPERVISOR"
+  - "CODPARC"
+  - "PARCEIRO"
+  - "NOMECIDPARC"
+  - "UFPARC"
+  - "CGCCPF_PAR"
+  - "PERFILEMPPARC"
+  - "RAMOATIVPARC"

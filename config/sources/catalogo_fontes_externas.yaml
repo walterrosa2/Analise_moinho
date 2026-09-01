@@ -1,0 +1,35 @@
+# Contrato de dados: catalogo_fontes_externas
+# Gerado por scripts/gen_source_contracts.py a partir da leitura REAL do arquivo.
+# Se uma coluna obrigatoria faltar, a carga FALHA de forma visivel (nunca silenciosa).
+
+source_id: catalogo_fontes_externas
+load_order: 15
+filename: "Inventário de Dados relatórios Sankhya e outros - Sanathielle.xlsx"
+filename_pattern: "Inventário de Dados relatórios Sankhya e outros - Sanathielle.xlsx*.xlsx"
+sheet: "Outras fontes"
+raw_table: catalogo_fontes_externas
+descricao: >-
+  Fontes externas (CONAB, Safras, Infoprice...). A coluna de credenciais e BLOQUEADA na leitura.
+
+# Perfil observado em 2026-09-01
+perfil_observado:
+  linhas: 6
+  colunas: 4
+  sha256_arquivo: "27c3078f8e3fefd880bf77bf965e271bef392a8d30f69c9cf8143a3b91585d22"
+
+# Sem grao unico verificado nesta fonte (ver docs/source_profile.md)
+grain: []
+
+required_columns:
+  - "FONTE"
+  - "LOCALIZAÇÃO"
+
+all_columns:
+  - "FONTE"
+  - "LOCALIZAÇÃO"
+  - "DADOS"
+
+# SEGURANCA: colunas que a plataforma se recusa a ler (credenciais em claro).
+# Nao entram nem na camada RAW. Ver docs/decisions.md (ADR-005).
+colunas_proibidas:
+  - "Login e Senha"

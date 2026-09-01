@@ -1,0 +1,84 @@
+# =====================================================================
+# Papel analítico do vendedor
+# =====================================================================
+# REGRA INVIOLÁVEL (especificação §36.6): papel de vendedor NUNCA é inferido
+# pelo nome. O default vem do campo `TipoVend` do ERP — que é dado, não
+# interpretação. Casos ambíguos ficam NAO_CLASSIFICADO até o negócio decidir.
+#
+# Contexto (Fase 0, 2026-09-01): dos 458 códigos cadastrados, apenas 34 têm
+# movimento na base 2023-2026.
+# =====================================================================
+
+versao: "1.0"
+status: NAO_HOMOLOGADO
+homologado_em: null
+homologado_por: null
+
+# ---------------------------------------------------------------------
+# Default por TipoVend do ERP
+# ---------------------------------------------------------------------
+default_por_tipovend:
+  "R - Representante": RCA
+  "S - Supervisor": SUPERVISOR
+  "V - Vendedor": INTERNO
+
+# Código sem correspondência no cadastro
+padrao_sem_cadastro: NAO_CLASSIFICADO
+
+# ---------------------------------------------------------------------
+# Atribuições explícitas (vencem o default)
+# ---------------------------------------------------------------------
+# Preencher com a decisão do negócio. Enquanto `papel` for NAO_CLASSIFICADO,
+# o código é excluído dos rankings de produtividade de RCA e exibido à parte.
+#
+# Papéis válidos:
+#   RCA | VENDA_DIRETA_LIDERANCA | INTERNO | SUPERVISOR | OUTRO | NAO_CLASSIFICADO
+# ---------------------------------------------------------------------
+codvend:
+
+  # --- Canais de venda, não pessoas (Q-01) --------------------------
+  # Tratá-los como RCA cria representantes fictícios e distorce todo
+  # ranking de produtividade. Aguardando decisão da diretoria comercial.
+
+  457:
+    apelido: "V DIRETA FARELO"
+    papel: NAO_CLASSIFICADO
+    grupo: CANAL
+    motivo: "Aparenta ser canal de venda direta de farelo, não um representante. 10,29% da receita (R$ 53,32 mi)."
+  44:
+    apelido: "TELEMK / BALCAO"
+    papel: NAO_CLASSIFICADO
+    grupo: CANAL
+    motivo: "Aparenta ser televendas/balcão (canal interno). Cadastrado como Supervisor. R$ 680,4 mil, 153 clientes."
+  6:
+    apelido: "COML CAIAPONIA"
+    papel: NAO_CLASSIFICADO
+    grupo: CANAL
+    motivo: "Aparenta ser pessoa jurídica/filial, não representante individual. R$ 2,12 mi, 5 clientes."
+  467:
+    apelido: "TITAN REPRESENT"
+    papel: NAO_CLASSIFICADO
+    grupo: CANAL
+    motivo: "Aparenta ser empresa de representação. R$ 384,7 mil, 4 clientes."
+  382:
+    apelido: "VDA SUBPRODUTO"
+    papel: NAO_CLASSIFICADO
+    grupo: CANAL
+    motivo: "Aparenta ser canal de venda de subproduto. R$ 177,4 mil, 6 clientes."
+
+  # --- Código sem cadastro (Q-02) -----------------------------------
+  0:
+    apelido: "NAO_IDENTIFICADO"
+    papel: NAO_CLASSIFICADO
+    grupo: NAO_IDENTIFICADO
+    motivo: "Não existe em Vendedor_Supervisor. 522 linhas, R$ 54.270,27, 13 clientes."
+
+# ---------------------------------------------------------------------
+# Observação de concentração (fato medido, não julgamento)
+# ---------------------------------------------------------------------
+# CODVEND 4 (LUIZ C RUFINO, "S - Supervisor") concentra 32,85% da receita
+# (R$ 170,29 mi) com 97 clientes. Somados os quatro supervisores, 36,23%
+# da receita não passa por representante.
+#
+# A plataforma reporta esse fato. NÃO o rotula como problema: a avaliação é
+# do consultor, com o contexto de esforço e potencial que o dado não tem.

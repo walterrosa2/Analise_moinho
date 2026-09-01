@@ -1,0 +1,33 @@
+# Segredos e dados não versionados
+.env
+data/input/*.xlsx
+data/input/*.xls
+data/exports/*
+logs/*
+
+# Ambiente e caches
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Artefatos locais e IDE
+artifacts/
+_trash/
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Excecoes: arquivos criticos para o build e seed de dados no Railway/Docker
+!requirements.txt
+!pyproject.toml
+!migrations/*.sql
+!config/**/*.yaml
+!data/parquet/*.parquet
+!data/parquet/.gitkeep
+!data/input/.gitkeep

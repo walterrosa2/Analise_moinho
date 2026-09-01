@@ -1,0 +1,31 @@
+# Contrato de dados: regiao_comercial
+# Gerado por scripts/gen_source_contracts.py a partir da leitura REAL do arquivo.
+# Se uma coluna obrigatoria faltar, a carga FALHA de forma visivel (nunca silenciosa).
+
+source_id: regiao_comercial
+load_order: 12
+filename: "REGIÃO COMERCIAL POR REPRESENTANTE -SANATHIELLE.xlsx"
+filename_pattern: "REGIÃO COMERCIAL POR REPRESENTANTE -SANATHIELLE.xlsx*.xlsx"
+sheet: "GERAL"
+raw_table: regiao_comercial_geral
+descricao: >-
+  Fonte adicional (fora da especificacao): mapa cidade -> regiao comercial -> representante.
+
+# Perfil observado em 2026-09-01
+perfil_observado:
+  linhas: 218
+  colunas: 5
+  sha256_arquivo: "c21f348c93ef81a7682fd144acad58aed4f4fa18f30df5a49665129f0416b299"
+
+# Sem grao unico verificado nesta fonte (ver docs/source_profile.md)
+grain: []
+
+required_columns:
+  - "CIDADE"
+
+all_columns:
+  - "CIDADE"
+  - "REGIÃO COMERCIAL"
+  - "REPRESENTANTE"
+  - "__UNNAMED__3"
+  - "__UNNAMED__4"

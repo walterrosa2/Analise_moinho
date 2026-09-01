@@ -1,0 +1,55 @@
+# Contrato de dados: custos_pa
+# Gerado por scripts/gen_source_contracts.py a partir da leitura REAL do arquivo.
+# Se uma coluna obrigatoria faltar, a carga FALHA de forma visivel (nunca silenciosa).
+
+source_id: custos_pa
+load_order: 4
+filename: "VENDAS-DEV-RCA-CUSTOS 012023-072026 V1.xlsx"
+filename_pattern: "VENDAS-DEV-RCA-CUSTOS*.xlsx"
+sheet: "Custos PA 012023 - 072026"
+raw_table: custos_pa
+descricao: >-
+  Seis conceitos de custo. Nenhum e oficial ate homologacao (Q-04).
+
+# Perfil observado em 2026-09-01
+perfil_observado:
+  linhas: 29135
+  colunas: 14
+  sha256_arquivo: "9ea2fda7d5a3ecfe3f7d33410642d4bb438e5e07212dc1d1f39fec3ec7ac9eae"
+
+grain:
+  - "CODPROD"
+  - "CODEMP"
+  - "CODLOCAL"
+  - "DTATUAL"
+
+required_columns:
+  - "CODPROD"
+  - "PRODUTO"
+  - "CODGRUPOPROD"
+  - "GRUPO_PRODUTO"
+  - "CODEMP"
+  - "CODLOCAL"
+  - "DTATUAL"
+  - "CUSMED"
+  - "CUSMEDICM"
+  - "CUSSEMICM"
+  - "CUSREP"
+  - "CUSGER"
+  - "CUSVARIAVEL"
+
+all_columns:
+  - "CODPROD"
+  - "PRODUTO"
+  - "CODGRUPOPROD"
+  - "GRUPO_PRODUTO"
+  - "UNIDADE"
+  - "CODEMP"
+  - "CODLOCAL"
+  - "DTATUAL"
+  - "CUSMED"
+  - "CUSMEDICM"
+  - "CUSSEMICM"
+  - "CUSREP"
+  - "CUSGER"
+  - "CUSVARIAVEL"

@@ -1,0 +1,37 @@
+# Contrato de dados: positivados_mensal
+# Gerado por scripts/gen_source_contracts.py a partir da leitura REAL do arquivo.
+# Se uma coluna obrigatoria faltar, a carga FALHA de forma visivel (nunca silenciosa).
+
+source_id: positivados_mensal
+load_order: 7
+filename: "POSITIVADOS V1.xlsx"
+filename_pattern: "POSITIVADOS*.xlsx"
+sheet: "parceiros positivados "
+raw_table: positivados_mensal
+descricao: >-
+  PARC_POSITIVADOS e lista separada por virgula. Explosao bate 100% com QTD.
+
+# Perfil observado em 2026-09-01
+perfil_observado:
+  linhas: 67
+  colunas: 7
+  sha256_arquivo: "e367ec1f0def45abb617dcb0002a84346808853e43b9b88c7a247bd6e45dc764"
+
+grain:
+  - "ANO"
+  - "MES"
+
+required_columns:
+  - "ANO"
+  - "MES"
+  - "QTD_POSITIVADOS"
+  - "PARC_POSITIVADOS"
+
+all_columns:
+  - "ANO"
+  - "MES"
+  - "QTD_POSITIVADOS"
+  - "VLRTOT_POSITIVADOS"
+  - "VLRTOT_GERAL"
+  - "PERC_PROSITIVADOS_X_GERAL_MES"
+  - "PARC_POSITIVADOS"

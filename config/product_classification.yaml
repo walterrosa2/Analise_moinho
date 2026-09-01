@@ -1,0 +1,62 @@
+# =====================================================================
+# Mapa CODPROD -> classificação comercial (FARINHAS / FARELO / MISTURAS / BOLO)
+# =====================================================================
+# Por que este arquivo existe:
+#   O ERP tem 3 grupos de produto (4001000 FARINHAS, 4002000 FARELO,
+#   4003000 MISTURAS), mas o relatório gerencial 161 usa 4 classificações
+#   (13 FARINHAS, 14 FARELO, 15 MISTURAS, 50 BOLO). O grupo MISTURAS do ERP
+#   se divide em MISTURAS e BOLO no 161.
+#
+# Como a regra foi validada (evidência, não suposição) — 2026-09-01:
+#   Hipótese: dentro do grupo MISTURAS, produtos cuja descrição começa com
+#   "MB" (Mistura para Bolo) pertencem a BOLO; os demais, a MISTURAS.
+#
+#   Confronto com o 161 REALIZADO 2025:
+#     ┌───────────┬──────────────────────────┬──────────────────────────┬────────┐
+#     │ Classif.  │ Transacional (DTFATUR)   │ 161 REALIZADO            │ Δ ton  │
+#     ├───────────┼──────────────────────────┼──────────────────────────┼────────┤
+#     │ FARINHAS  │ R$ 105,60 mi / 37.078,7t │ R$ 107,09 mi / 37.508,9t │ -1,15% │
+#     │ FARELO    │ R$  16,15 mi / 13.250,8t │ R$  16,17 mi / 13.318,8t │ -0,51% │
+#     │ BOLO      │ R$  12,70 mi /  1.929,4t │ R$  13,15 mi /  1.981,3t │ -2,62% │
+#     │ MISTURAS  │ R$  10,45 mi /  4.107,8t │ R$  10,32 mi /  4.114,5t │ -0,16% │
+#     └───────────┴──────────────────────────┴──────────────────────────┴────────┘
+#   Diferenças compatíveis com o critério de data de corte do 161.
+#
+# STATUS: PROVISIONAL — aguarda homologação do consultor comercial (Q-12).
+# =====================================================================
+
+versao: "1.0"
+status: PROVISIONAL
+homologado_em: null
+homologado_por: null
+
+# Classificações válidas e seus códigos no 161
+classificacoes:
+  FARINHAS: 13
+  FARELO: 14
+  MISTURAS: 15
+  BOLO: 50
+
+# Regra 1 (prioridade mais alta): grupo do ERP define a classificação
+regra_por_grupo:
+  4001000: FARINHAS
+  4002000: FARELO
+  4003000: MISTURAS   # refinado pela regra 2 abaixo
+
+# Regra 2: dentro do grupo 4003000, prefixo da descrição separa BOLO de MISTURAS
+regra_por_prefixo_descricao:
+  aplica_ao_grupo: 4003000
+  prefixos:
+    - prefixo: "MB"          # MB LUNAR…, MBL PREM…, MB SANTO GRANO…
+      classificacao: BOLO
+  padrao: MISTURAS           # P.M. … MIX, PREPARADO …
+
+# Regra 3: exceções explícitas por código de produto.
+# Preencher aqui qualquer produto cuja classificação o negócio corrigir.
+# Uma entrada aqui vence as regras 1 e 2.
+excecoes: {}
+  # 20061: MISTURAS   # exemplo: "RESIDUO - MISTURAS BOLO" — a decidir
+
+# Produtos sem correspondência recebem NAO_CLASSIFICADO e aparecem
+# na página de Qualidade. Nunca são forçados a uma categoria.
+padrao_sem_correspondencia: NAO_CLASSIFICADO
