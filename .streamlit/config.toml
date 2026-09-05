@@ -8,7 +8,12 @@ font = "sans serif"
 
 [server]
 address = "0.0.0.0"
-port = 8501
+# A PORTA NAO FICA AQUI DE PROPOSITO.
+# Em nuvem, quem manda na porta e o ambiente: o entrypoint passa
+# --server.port="${PORT}" e o Dockerfile define o padrao (ENV PORT=8501).
+# O argumento de linha de comando tem precedencia sobre este arquivo, entao um
+# valor fixo aqui nao quebraria o deploy — mas criaria uma segunda fonte de
+# verdade sobre a porta, que e exatamente o que produz 502 dificil de rastrear.
 headless = true
 maxUploadSize = 200
 fileWatcherType = "auto"
