@@ -1,0 +1,216 @@
+# =====================================================================
+# Potencial de mercado de FARINHA em Minas Gerais — parâmetros de negócio
+# =====================================================================
+# Por que este arquivo existe:
+#   A análise de potencial é uma OPINIÃO ESTRUTURADA, não um fato medido.
+#   Todo julgamento (quais CNAEs contam, quanto cada segmento consome,
+#   que fração é capturável) fica aqui, versionado e auditável — nunca
+#   embutido no código. Trocar um número aqui recalcula o mapa inteiro.
+#
+# Base do desenho: "deep-research-report-potencial-vendas.md" (2026-09-05),
+#   que recomenda medir POTENCIAL ECONÔMICO por município — e não simples
+#   contagem de estabelecimentos — e calibrar o consumo pela economia real
+#   dos próprios clientes do Moinho.
+#
+# STATUS: PROVISIONAL — pesos e probabilidades aguardam homologação
+#         comercial (Q-16).
+# =====================================================================
+
+versao: "1.0"
+status: PROVISIONAL
+homologado_em: null
+homologado_por: null
+
+uf_alvo: MG
+codigo_uf_ibge: 31
+
+# Classificações de produto que compõem o mercado estudado.
+# FARELO fica de fora: é cadeia de ração animal, não de panificação.
+classificacoes_no_escopo:
+  - FARINHAS
+  - MISTURAS
+  - BOLO
+
+# ---------------------------------------------------------------------
+# Fontes públicas (IBGE). Nenhuma URL fica no código.
+# ---------------------------------------------------------------------
+fontes_ibge:
+  municipios: "https://servicodados.ibge.gov.br/api/v1/localidades/estados/{uf}/municipios"
+  populacao:
+    agregado: 4714          # Censo 2022 — População residente
+    variavel: 93
+    periodo: "2022"
+  empresas:
+    agregado: 9528          # CEMPRE — Unidades locais por município e classe CNAE 2.0
+    variavel_unidades: 706  # Número de unidades locais
+    variavel_pessoal: 707   # Pessoal ocupado total (proxy de porte)
+    periodo: "-1"           # -1 = período mais recente publicado
+    classificacao: 12762    # CNAE 2.0
+  malha:
+    url: "https://servicodados.ibge.gov.br/api/v3/malhas/estados/{uf}"
+    qualidade: "intermediaria"   # minima | intermediaria | maxima
+
+# ---------------------------------------------------------------------
+# Segmentos de mercado consumidores de farinha
+# ---------------------------------------------------------------------
+# cnae_id      : id da categoria na classificação 12762 do agregado 9528
+# intensidade  : peso relativo de consumo de farinha (escala do relatório, 0-5)
+# prob_captura : fração do consumo do segmento que um moinho regional
+#                realisticamente disputa (concorrência, fidelidade, logística)
+# canal        : modelo de atendimento recomendado pelo relatório
+# papel        : CONSUMIDOR (consome farinha) | MULTIPLICADOR (revende/capilariza)
+# perfis_moinho: perfis do cadastro do Moinho usados para medir o consumo real
+segmentos:
+  panificacao:
+    rotulo: "Panificação e confeitaria"
+    cnae_id: 116945
+    cnae: "10.91-1"
+    papel: CONSUMIDOR
+    intensidade: 5
+    prob_captura: 0.25
+    canal: "RCA / venda direta seletiva"
+    perfis_moinho: ["Padaria", "INDUSTRIA DE PANIFICAÇÃO", "Industria de Paes Embalados",
+                    "Industria de Paes Congelados"]
+  biscoitos:
+    rotulo: "Biscoitos e bolachas"
+    cnae_id: 116946
+    cnae: "10.92-9"
+    papel: CONSUMIDOR
+    intensidade: 5
+    prob_captura: 0.15
+    canal: "Key account industrial"
+    perfis_moinho: ["Industria de Biscoitos"]
+  massas:
+    rotulo: "Massas alimentícias"
+    cnae_id: 116948
+    cnae: "10.94-5"
+    papel: CONSUMIDOR
+    intensidade: 5
+    prob_captura: 0.20
+    canal: "Key account industrial"
+    perfis_moinho: ["INDUSTRIA DE MASSAS/PASTIFICIO"]
+  pratos_prontos:
+    rotulo: "Alimentos e pratos prontos (congelados)"
+    cnae_id: 116950
+    cnae: "10.96-1"
+    papel: CONSUMIDOR
+    intensidade: 3
+    prob_captura: 0.20
+    canal: "Indústria potencial — farinha técnica"
+    perfis_moinho: ["Industria Alimenticia", "Outras Industrias"]
+  food_service:
+    rotulo: "Food service (restaurantes, pizzarias, lanchonetes)"
+    cnae_id: 117551
+    cnae: "56.11-2"
+    papel: CONSUMIDOR
+    intensidade: 1
+    prob_captura: 0.05
+    canal: "Via distribuidor"
+    perfis_moinho: ["Pizzaria", "Restaurantes", "Lanchonetes", "Bares",
+                    "Buffets e Clubes"]
+  atacado_farinhas:
+    rotulo: "Atacado de cereais, farinhas e amidos"
+    cnae_id: 117393
+    cnae: "46.32-0"
+    papel: MULTIPLICADOR
+    intensidade: 4
+    prob_captura: 0.30
+    canal: "Distribuidor especializado"
+    perfis_moinho: ["ATACADISTA DE FARINHA", "ATACADISTA"]
+  atacado_alimentos:
+    rotulo: "Atacado de produtos alimentícios em geral"
+    cnae_id: 117399
+    cnae: "46.39-7"
+    papel: MULTIPLICADOR
+    intensidade: 3
+    prob_captura: 0.25
+    canal: "Distribuidor / atacarejo"
+    perfis_moinho: ["ATACADISTA DE PRODUTOS AGRÍCOLAS", "CESTA BÁSICA", "COOPERATIVAS"]
+  varejo_padaria:
+    rotulo: "Varejo de produtos de padaria e mercearia"
+    cnae_id: 117444
+    cnae: "47.21-1"
+    papel: MULTIPLICADOR
+    intensidade: 1
+    prob_captura: 0.08
+    canal: "Cauda longa via distribuidor"
+    perfis_moinho: ["Minimercado (<5 CheckOuts)", "Supermercado (entre 5 e 49 Checkouts)",
+                    "Hipermercado (>50 CheckOuts)", "OUTROS TIPOS DE VAREJO",
+                    "Outros Tipos de Varejo"]
+
+# ---------------------------------------------------------------------
+# Modelo de potencial
+# ---------------------------------------------------------------------
+modelo:
+  # Como o consumo por estabelecimento é obtido:
+  #   OBSERVADO = mediana de t/mês dos clientes reais do Moinho no segmento
+  #               (método recomendado pelo relatório — usa a economia real)
+  #   FALLBACK  = usado quando o segmento tem menos que minimo_clientes_amostra
+  #               clientes observados; deriva da intensidade relativa.
+  origem_consumo: OBSERVADO
+  minimo_clientes_amostra: 5
+
+  # Consumo de referência (t/mês) para intensidade = 1, usado só no fallback.
+  consumo_fallback_por_intensidade_t_mes: 0.35
+
+  # Ajuste de porte: o CEMPRE publica pessoal ocupado por município e CNAE.
+  # Municípios com estabelecimentos maiores que a média estadual do segmento
+  # recebem fator > 1. Limitado para não deixar outlier dominar o mapa.
+  ajuste_porte:
+    ativo: true
+    fator_minimo: 0.5
+    fator_maximo: 2.5
+
+  # Janela de vendas considerada "presença atual" do Moinho.
+  janela_vendas_meses: 12
+
+# ---------------------------------------------------------------------
+# Classificação de White Space (matriz potencial x venda)
+# ---------------------------------------------------------------------
+# Corte por percentil dentro do próprio estado — evita depender de valores
+# absolutos que mudam quando a série cresce.
+#
+# As cores das três classes de ação foram validadas para daltonismo
+# (separação CVD em OKLab acima do piso, croma e contraste aprovados nos temas
+# claro e escuro). "Baixa prioridade" usa um neutro de propósito: não é uma
+# categoria de ação, é o fundo contra o qual as outras três se destacam.
+white_space:
+  percentil_potencial_alto: 0.70
+  percentil_venda_alta: 0.70
+  penetracao_saudavel_pct: 5.0
+  classes:
+    ALTO_ALTA:
+      rotulo: "Fortaleza"
+      cor: "#0D8A78"
+      acao: "Defender e aprofundar mix"
+    ALTO_BAIXA:
+      rotulo: "White Space"
+      cor: "#D2481B"
+      acao: "Atacar — maior prioridade"
+    BAIXO_ALTA:
+      rotulo: "Bem penetrado"
+      cor: "#2563EB"
+      acao: "Avaliar concentração e risco"
+    BAIXO_BAIXA:
+      rotulo: "Baixa prioridade"
+      cor: "#9AA8A4"
+      acao: "Atender via distribuidor"
+
+# ---------------------------------------------------------------------
+# Viabilidade logística
+# ---------------------------------------------------------------------
+# Atratividade = Potencial Comercial x Viabilidade Logística (relatório).
+# O frete real R$/t por cidade vem do CT-e; onde não há histórico, usa-se
+# a mediana da região intermediária.
+logistica:
+  ativo: true
+  multiplo_frete_inviavel: 2.5
+  peso_na_atratividade: 0.35
+
+# ---------------------------------------------------------------------
+# Território dos RCAs
+# ---------------------------------------------------------------------
+territorio:
+  fonte_regiao_comercial: regiao_comercial          # CIDADE | REGIÃO COMERCIAL | REPRESENTANTE
+  fonte_regiao_representante: regiao_representante   # CIDADE | ESTADO | CÓDIGO-REPRESENTANTE | REPRESENTANTE
+  sufixos_ruido: [", Minas Gerais", " - MG", ", MG", " (MG)", " MG"]

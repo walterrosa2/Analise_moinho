@@ -52,10 +52,14 @@ Os arquivos originais nunca são tocados.
 contra o relatório gerencial 161. A reconciliação mensal fecha em **43/43 meses dentro de 0,5%**,
 com divergência média de **0,05%**.
 
-**Aplicação** — 13 páginas, filtros globais consistentes, drill-down até o item da nota,
+**Aplicação** — 14 páginas, filtros globais consistentes, drill-down até o item da nota,
 exportação carimbada, construtor de visões e insights quantitativos com evidência.
 
-**Testes** — 59 testes, incluindo a renderização real de todas as telas contra o banco carregado.
+**Testes** — 99 testes, incluindo a renderização real de todas as telas contra o banco carregado.
+
+**Mercado externo** — 853 municípios de MG com população do Censo 2022 e estabelecimentos
+consumidores de farinha por classe CNAE (CEMPRE 2024). Único ponto da plataforma que usa
+internet, isolado em `scripts/build_mercado_mg.py`: sem rede, o pipeline segue com o cache.
 
 ---
 
@@ -76,6 +80,7 @@ exportação carimbada, construtor de visões e insights quantitativos com evid�
 | 11 | **Trigo × Custo × PMV** | correlação exploratória com defasagem de 0 a 6 meses |
 | 12 | **Explorador** | monta e salva visões novas, sem alterar código |
 | 13 | **Admin e Diagnóstico** | estado do banco, cargas, configuração, auditoria |
+| 14 | **Potencial de Mercado MG** | venda × território × mercado potencial nos 853 municípios; White Space |
 
 ---
 
@@ -97,14 +102,14 @@ A separação permite trocar Streamlit por FastAPI + React sem tocar em regra an
 
 ```text
 moinho-analytics/
-├── app/          interface Streamlit (main + 13 páginas + componentes + estado)
+├── app/          interface Streamlit (main + 14 páginas + componentes + estado)
 ├── src/          ingestão · staging · db · repositórios · métricas · insights · reconciliação
 ├── config/       contratos de fonte e parâmetros de negócio (nada de hardcode)
 ├── migrations/   SQL versionado, aplicado por checksum
 ├── scripts/      profiling, contratos, pipeline, geração de docs
 ├── docs/         perfil, dicionário, regras, linhagem, decisões, dúvidas em aberto
-├── tests/        59 testes
-└── data/         input · parquet · exports  (fora do controle de versão)
+├── tests/        99 testes
+└── data/         input · parquet · exports · geo  (fora do controle de versão)
 ```
 
 ---

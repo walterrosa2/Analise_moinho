@@ -39,6 +39,10 @@ build/
 # --- Streamlit ---
 .streamlit/secrets.toml
 
+# --- Indice de sessoes (reconstruido pelo indexador, nunca editado a mao) ---
+knowledge/sessions.md
+knowledge/sessions.jsonl
+
 # --- Quarentena ---
 _trash/
 

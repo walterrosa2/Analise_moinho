@@ -122,3 +122,66 @@ pytest                             # 59 testes
 
 A carga é idempotente: rodar `run_pipeline.py` duas vezes seguidas não duplica nada — a segunda
 execução pula todas as fontes cujo hash já foi carregado com sucesso.
+
+---
+
+## Camada geográfica de mercado (Minas Gerais)
+
+Única parte da plataforma que consome dados de fora do Moinho. Roda separada do
+pipeline principal (`scripts/build_mercado_mg.py`) e nunca é chamada em tempo de tela.
+
+```text
+  API do IBGE  (as URLs vivem em config/mercado_mg.yaml, não no código)
+    ├─ Localidades .............. 853 municípios de MG + hierarquia regional oficial
+    ├─ Censo 2022 (agr. 4714) ... população residente por município
+    ├─ CEMPRE 2024 (agr. 9528) .. unidades locais e pessoal ocupado
+    │                             por município × classe CNAE 2.0
+    └─ Malha municipal .......... GeoJSON para o mapa (data/geo/, fora do banco)
+        │  retry com backoff · sem rede, o pipeline segue com o cache
+        ▼
+  data/parquet/mercado_mg_*.parquet
+        │  src/staging/geografia.py
+        ▼
+  analytics.dim_municipio_mg          o denominador: 853 municípios
+  analytics.map_cidade_ibge           pareamento auditável grafia → código IBGE
+  analytics.fact_mercado_cnae         estabelecimentos por município e segmento
+  analytics.dim_territorio_rca        território declarado (2 abas preservadas)
+  analytics.fact_potencial_municipio  potencial estimado em t/mês
+        │
+        ▼
+  analytics.mv_vendas_municipio_mg    venda por município × mês × classificação
+  analytics.mv_mercado_municipio_mg   as três camadas sobrepostas, 1 linha/município
+        │
+        ▼
+  src/repositories/geo.py  →  app/pages/p13_potencial_mg.py
+```
+
+### O ponto de integração: código IBGE do município
+
+Três fontes escrevem o nome da cidade de três jeitos — `5357-UBERLANDIA` no ERP,
+`Uberlândia, Minas Gerais` numa aba do arquivo de território e `UBERLANDIA` na outra.
+O pareamento é um **dado inspecionável** em `analytics.map_cidade_ibge`, não um `LIKE`
+escondido dentro de uma consulta. Cada grafia carrega o método que a ligou:
+
+| Método | Significado | Resultado atual |
+|---|---|---|
+| `EXATO` | idênticas após normalização | 435 grafias |
+| `SEM_CONECTIVOS` | idênticas após expandir abreviação e remover *de/do/da* | 9 grafias |
+| `APROXIMADO` | similaridade alta, primeiro token igual, sem empate | 1 grafia |
+| `AMBIGUO` | dois municípios disputam a grafia — não se decide sozinho | 0 |
+| `NAO_ENCONTRADO` | sem correspondência segura | 76 grafias |
+
+As 150 cidades com venda em MG parearam **sem uso de aproximação**. As 76 sem
+correspondência são cidades de GO, SP, MT e DF que constam do arquivo de território —
+ficarem de fora é o comportamento correto para uma análise restrita a Minas.
+
+### O que é fato e o que é estimativa
+
+| Camada | Natureza | Origem |
+|---|---|---|
+| Venda por município | **fato** | item de nota fiscal |
+| Território do RCA | **fato** (declaração) | arquivo de região comercial |
+| Estabelecimentos | **fato** | CEMPRE/IBGE |
+| Consumo por estabelecimento | **medido** nos clientes do Moinho | mediana observada |
+| Probabilidade de captura | **julgamento** | `config/mercado_mg.yaml`, não homologado |
+| Potencial em t/mês | **estimativa** | produto dos quatro acima |

@@ -21,12 +21,14 @@ if hasattr(sys.stdout, "reconfigure"):
 from src.db import migrate
 from src.db.engine import execute, ping
 from src.ingestion.loader import carregar_todas
+from src.ingestion.mercado_ibge import sincronizar as sincronizar_mercado
 from src.logging_setup import log_audit, logger, setup_logging
 from src.reconciliation.quality import executar_verificacoes
 from src.reconciliation.reconcile import executar_reconciliacao
 from src.staging.costs import construir_custos
 from src.staging.dimensions import construir_todas as construir_dimensoes
 from src.staging.freight import construir_frete
+from src.staging.geografia import construir_todas as construir_geografia
 from src.staging.managerial import construir_gerenciais
 from src.staging.sales import construir_vendas
 
@@ -43,6 +45,9 @@ MATERIALIZED_VIEWS = [
     "mv_cost_product_month",
     "mv_positivados_cohort",
     "mv_trigo_cost_month",
+    # Camada geografica de mercado (MG): a de vendas alimenta a de sobreposicao
+    "mv_vendas_municipio_mg",
+    "mv_mercado_municipio_mg",
 ]
 
 
@@ -63,6 +68,8 @@ ETAPAS = {
     "custos": ("Custos + as-of join", lambda a: construir_custos()),
     "frete": ("CT-e + rateio de frete", lambda a: construir_frete()),
     "gerenciais": ("Fatos gerenciais", lambda a: construir_gerenciais()),
+    "mercado": ("Mercado externo (IBGE)", lambda a: _etapa_mercado(a)),
+    "geografia": ("Camada geografica MG", lambda a: _etapa_geografia()),
     "views": ("Materialized views", lambda a: {"views": atualizar_views()}),
     "qualidade": ("Testes de qualidade", lambda a: _resumo_qualidade(executar_verificacoes())),
     "reconciliacao": ("Reconciliacao", lambda a: executar_reconciliacao()),
@@ -76,6 +83,44 @@ def _resumo_raw(res: list[dict[str, Any]]) -> dict[str, Any]:
         "skipped": sum(1 for r in res if r["status"] == "SKIPPED"),
         "falhas": sum(1 for r in res if r["status"] == "FAILED"),
         "linhas": sum(r.get("linhas", 0) for r in res),
+    }
+
+
+def _etapa_mercado(args: Any) -> dict[str, Any]:
+    """
+    Fontes publicas do IBGE. E a unica etapa que depende da internet, entao ela
+    nao pode derrubar o pipeline: sem rede e sem cache, o diagnostico comercial
+    inteiro continua valido - so a camada de potencial fica indisponivel.
+    """
+    try:
+        return sincronizar_mercado(forcar=args.forcar)
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"Mercado externo indisponivel: {exc}")
+        return {"status": "INDISPONIVEL", "erro": str(exc)[:200]}
+
+
+def _etapa_geografia() -> dict[str, Any]:
+    """Camada geografica de MG. Pulada quando a base externa nao foi baixada."""
+    try:
+        return _resumo_geografia(construir_geografia())
+    except FileNotFoundError as exc:
+        logger.warning(f"Camada geografica pulada: {exc}")
+        return {"status": "PULADA", "motivo": str(exc)[:200]}
+
+
+def _resumo_geografia(res: dict[str, Any]) -> dict[str, Any]:
+    pareamento = res.get("pareamento", {})
+    return {
+        "municipios": res.get("municipios"),
+        "cidades_pareadas": sum(
+            v["pareados"] for v in pareamento.values() if isinstance(v, dict)
+        ),
+        "cidades_sem_municipio": pareamento.get("nao_encontrados"),
+        "linhas_mercado_cnae": res.get("mercado_cnae"),
+        "atribuicoes_territorio": res.get("territorio"),
+        "potencial_capturavel_t_mes": (res.get("potencial") or {}).get(
+            "potencial_capturavel_t_mes"
+        ),
     }
 
 

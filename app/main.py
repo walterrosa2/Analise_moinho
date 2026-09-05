@@ -69,6 +69,7 @@ PAGINAS = {
         st.Page("pages/p02_gestao_mix.py", title="Gestão Diária e Mix", icon="📊"),
         st.Page("pages/p03_vendas.py", title="Vendas e Devoluções", icon="🧾"),
         st.Page("pages/p04_regional.py", title="Regional e Territorial", icon="🗺️"),
+        st.Page("pages/p13_potencial_mg.py", title="Potencial de Mercado MG", icon="🎯"),
         st.Page("pages/p05_rcas.py", title="RCAs e Vendedores", icon="👥"),
         st.Page("pages/p06_clientes.py", title="Clientes", icon="🏢"),
         st.Page("pages/p07_positivados.py", title="Positivados e Coortes", icon="🌱"),
