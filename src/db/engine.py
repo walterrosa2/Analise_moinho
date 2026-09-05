@@ -129,10 +129,25 @@ def insert_dataframe(
 
 
 def table_exists(schema: str, table: str) -> bool:
+    """
+    Existe uma relacao com esse nome? Tabela, view, MATERIALIZED VIEW ou particao.
+
+    Consulta pg_class, e nao information_schema.tables: o padrao SQL nao conhece
+    materialized view, entao o information_schema nao lista nenhuma das 13 MVs do
+    modelo analitico. Com a consulta anterior, `table_exists('analytics',
+    'mv_sales_month')` respondia False com a MV carregada — e o auto_seed do
+    deploy concluia que o banco estava vazio e reprocessava tudo a cada restart.
+
+    relkind: r=tabela, p=particionada, v=view, m=materialized view, f=externa.
+    """
     sql = """
         SELECT EXISTS (
-            SELECT 1 FROM information_schema.tables
-            WHERE table_schema = :schema AND table_name = :table
+            SELECT 1
+            FROM pg_class c
+            JOIN pg_namespace n ON n.oid = c.relnamespace
+            WHERE n.nspname = :schema
+              AND c.relname = :table
+              AND c.relkind IN ('r', 'p', 'v', 'm', 'f')
         ) AS existe
     """
     df = read_sql(sql, {"schema": schema, "table": table})
