@@ -5,6 +5,39 @@ Histórico em ordem inversa (mais recente no topo). Complementa
 
 ---
 
+## 2026-09-05 11:45 - Claude Code (Opus 5) - Publicação em main e preparo de deploy
+
+- **Feito:** auditoria de deploy (skill `railway-deploy-checklist`, adaptada de
+  FastAPI+SQLite para Streamlit+PostgreSQL) e publicação.
+  - **Dois defeitos reais encontrados na auditoria:**
+    1. `table_exists` consultava `information_schema.tables`, que pelo padrão SQL não
+       conhece materialized view — as 13 MVs respondiam "não existe" mesmo carregadas.
+       Passou a consultar `pg_class` por `relkind`.
+    2. `auto_seed` verificava `staging.fat_vendas`, tabela inexistente neste modelo.
+       Somado ao item 1, concluía "banco vazio" com 204 mil linhas e **reprocessava a
+       ingestão completa em todo restart do container** — risco de estourar o
+       `healthcheckTimeout` de 120s do Railway e entrar em ciclo de restart.
+  - Seed agora sai em <1s com banco populado; se a camada de MG faltar num banco já
+    carregado, roda só `mercado/geografia/views`.
+  - Conferido: `/healthz` responde 200 no Streamlit 1.41.1; `ENV PORT`/`EXPOSE`/
+    entrypoint todos em 8501; `.env` fora da imagem; 15 parquets e as 2 malhas
+    geográficas entram no container.
+- **Publicado:** branch `feat/potencial-mercado-mg` → merge `--no-ff` em `main`.
+  `main` = **1c85ef1**, empurrada para `origin`. O Railway faz deploy a partir daí.
+- **Variáveis no Railway:** cadastradas pelo usuário antes do merge. A crítica é
+  `AUTH_PASSWORD` — sem ela o default do código volta a ser `admin`.
+- **Não feito:** não acompanhei o deploy. O Railway CLI está instalado e autenticado
+  (`ia@enthusconsulting.com.br`), mas esta pasta não está vinculada a um projeto
+  (`railway link` é interativo) e o nome do projeto do Moinho não é óbvio na lista.
+  O `gh` CLI não está instalado, então o PR não foi aberto por linha de comando.
+- **Próximo passo:** conferir no painel do Railway se o build passou e se o primeiro
+  acesso pede a nova senha. Segue valendo a Q-16 (homologar probabilidades de captura).
+- **Como validar em produção:** abrir a URL do serviço, logar com `admin` e a senha
+  definida, e ir em Comercial → "Potencial de Mercado MG" — o mapa deve desenhar os
+  853 municípios.
+
+---
+
 ## 2026-09-05 10:30 - Claude Code (Opus 5) - Correção: mapas da página Potencial MG não apareciam
 
 - **Sintoma relatado:** "As três camadas, lado a lado não estão visíveis".
