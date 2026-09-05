@@ -57,8 +57,45 @@ def _pareamento() -> pl.DataFrame:
 
 
 @st.cache_resource(show_spinner=False)
-def _malha() -> dict | None:
-    return geo.geojson_municipios()
+def _malha(resolucao: str = "detalhe") -> dict | None:
+    return geo.geojson_municipios(resolucao)
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def _enquadramento() -> tuple[list[float], list[float]] | None:
+    """
+    Extremos de longitude e latitude da malha, com uma folga de 2%.
+
+    Enquadrar explicitamente em vez de usar `fitbounds='locations'`: com o mapa
+    base invisivel, o ajuste automatico do Plotly amplia o mapa ate dentro de um
+    municipio e o painel vira um retangulo liso, sem o contorno de Minas.
+    """
+    malha = _malha("leve")
+    if malha is None:
+        return None
+
+    lons: list[float] = []
+    lats: list[float] = []
+
+    def varrer(coordenadas) -> None:
+        if coordenadas and isinstance(coordenadas[0], int | float):
+            lons.append(float(coordenadas[0]))
+            lats.append(float(coordenadas[1]))
+            return
+        for parte in coordenadas:
+            varrer(parte)
+
+    for feicao in malha["features"]:
+        varrer(feicao["geometry"]["coordinates"])
+
+    if not lons:
+        return None
+    folga_lon = (max(lons) - min(lons)) * 0.02
+    folga_lat = (max(lats) - min(lats)) * 0.02
+    return (
+        [min(lons) - folga_lon, max(lons) + folga_lon],
+        [min(lats) - folga_lat, max(lats) + folga_lat],
+    )
 
 
 def mapa(
@@ -68,6 +105,7 @@ def mapa(
     escala: str = "Teal",
     altura: int = 520,
     discreto: bool = False,
+    leve: bool = False,
 ) -> go.Figure | None:
     """
     Choropleth municipal de MG sobre a malha oficial do IBGE.
@@ -75,8 +113,12 @@ def mapa(
     `discreto=True` pinta por categoria (os quadrantes de White Space), usando
     a cor declarada em config/mercado_mg.yaml. Devolve None se a malha nao foi
     baixada — a pagina entao cai para o ranking em barras, com os mesmos numeros.
+
+    `leve=True` usa a malha reduzida. O Plotly embute o GeoJSON inteiro em cada
+    figura e o Streamlit renderiza todas as abas de uma vez, entao o mini-mapa
+    de 330 px nao pode carregar a mesma malha do mapa de 700 px.
     """
-    malha = _malha()
+    malha = _malha("leve" if leve else "detalhe")
     if malha is None:
         return None
 
@@ -105,6 +147,9 @@ def mapa(
         fig = go.Figure(go.Choropleth(
             geojson=malha, locations=locais, z=z,
             featureidkey="properties.codarea",
+            # Sem isto o Plotly assume locationmode='ISO-3' e tenta ler
+            # '3100104' como codigo de pais: o mapa monta e nao desenha nada.
+            locationmode="geojson-id",
             colorscale=colorscale, zmin=-0.5, zmax=n + 0.5,
             marker_line_color="rgba(255,255,255,0.45)", marker_line_width=0.3,
             colorbar=dict(
@@ -120,6 +165,7 @@ def mapa(
         fig = go.Figure(go.Choropleth(
             geojson=malha, locations=locais, z=valores,
             featureidkey="properties.codarea",
+            locationmode="geojson-id",
             colorscale=escala,
             marker_line_color="rgba(255,255,255,0.45)", marker_line_width=0.3,
             colorbar=dict(thickness=14, len=0.75, title=""),
@@ -127,7 +173,16 @@ def mapa(
             hovertemplate="%{text}<br>%{z:,.2f}<extra></extra>",
         ))
 
-    fig.update_geos(fitbounds="locations", visible=False)
+    limites = _enquadramento()
+    if limites:
+        lon, lat = limites
+        fig.update_geos(
+            visible=False, projection_type="mercator",
+            lonaxis_range=lon, lataxis_range=lat,
+        )
+    else:
+        fig.update_geos(fitbounds="locations", visible=False)
+
     fig.update_layout(
         title=titulo, height=altura, margin=dict(l=0, r=0, t=44, b=0),
         paper_bgcolor="rgba(0,0,0,0)", geo=dict(bgcolor="rgba(0,0,0,0)"),
@@ -236,16 +291,16 @@ with abas[0]:
              "O mesmo estado visto por venda, por cobertura comercial e por mercado.")
     col1, col2, col3 = st.columns(3)
     with col1:
-        fig = mapa(df, "venda_t_mes", "1 · Venda (t/mês)", escala="Teal", altura=330)
+        fig = mapa(df, "venda_t_mes", "1 · Venda (t/mês)", escala="Teal", altura=330, leve=True)
         if fig:
             st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
     with col2:
         fig = mapa(df, "qtd_representantes", "2 · RCAs por cidade",
-                   escala="Purples", altura=330)
+                   escala="Purples", altura=330, leve=True)
         if fig:
             st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
     with col3:
-        fig = mapa(df, "teto_t_mes", "3 · Potencial (t/mês)", escala="Oranges", altura=330)
+        fig = mapa(df, "teto_t_mes", "3 · Potencial (t/mês)", escala="Oranges", altura=330, leve=True)
         if fig:
             st.plotly_chart(fig, use_container_width=True, config={"displaylogo": False})
 

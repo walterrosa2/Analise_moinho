@@ -55,6 +55,8 @@ Legenda: `[x]` concluído · `[ ]` pendente
 
 - [x] 15 testes puros de normalização e pareamento (rodam sem banco).
 - [x] 9 testes de integração da camada carregada.
+- [x] 4 testes de regressão dos defeitos de renderização do mapa
+      (orientação dos anéis, simplificação sem perder município, import de pandas).
 - [x] Teste que a venda do mapa bate com o fato de venda em MG (divergência < 0,01%).
 - [x] Teste que o repositório reproduz a materialized view na janela padrão.
 - [x] Teste que município sem venda nunca é classificado como venda alta.
@@ -65,8 +67,22 @@ Legenda: `[x]` concluído · `[ ]` pendente
 |---|---|
 | `ruff check src app tests scripts` | **All checks passed** |
 | `pytest tests/test_mercado_mg.py` | **24 passaram** |
-| `pytest` (suíte completa) | **99 passaram**, 0 falhas |
+| `pytest` (suíte completa) | **103 passaram**, 0 falhas |
 | `pytest tests/test_paginas.py -k "p13 or main"` | **2 passaram** (renderização real) |
+
+## Correção pós-entrega — mapas não apareciam
+
+- [x] Diagnosticar com navegador real (Playwright), lendo o DOM: `AppTest` executa
+      o Python da página mas não renderiza o front-end.
+- [x] `locationmode="geojson-id"` — o default `ISO-3` fazia o Plotly ignorar o
+      GeoJSON e não desenhar nenhum município (também em `p04_regional.py`).
+- [x] Orientação dos anéis para o d3-geo (exterior horário) — sem isso o painel
+      virava um retângulo sólido com o município recortado.
+- [x] `import pandas` explícito em `ui.py` — erro intermitente de import parcial
+      entre threads do Streamlit derrubava a tela.
+- [x] Malha simplificada em duas resoluções: 11 MB → ~2,3 MB por carga de página.
+- [x] Verificado no navegador: 853 polígonos em todos os mapas da página e 13 na
+      página Regional.
 
 ## Pendente (fora do escopo desta entrega)
 

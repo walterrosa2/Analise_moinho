@@ -22,7 +22,7 @@ import polars as pl
 
 from src.config import load_yaml
 from src.db.engine import read_sql
-from src.ingestion.mercado_ibge import GEOJSON_NOME, geo_path
+from src.ingestion.mercado_ibge import GEOJSON_LEVE, GEOJSON_NOME, geo_path
 
 
 def config() -> dict[str, Any]:
@@ -487,15 +487,24 @@ def qualidade_pareamento() -> pl.DataFrame:
 # =====================================================================
 # Malha geografica
 # =====================================================================
-@lru_cache(maxsize=1)
-def geojson_municipios() -> dict[str, Any] | None:
+@lru_cache(maxsize=2)
+def geojson_municipios(resolucao: str = "detalhe") -> dict[str, Any] | None:
     """
-    Malha municipal de MG (IBGE), lida do disco. Devolve None se o arquivo
-    ainda nao foi baixado — a pagina cai para o ranking em barras, que mostra
-    exatamente os mesmos numeros.
+    Malha municipal de MG (IBGE), lida do disco.
+
+    `resolucao='leve'` devolve a versao reduzida, para os mini-mapas do painel:
+    o Plotly embute o GeoJSON inteiro em cada figura, entao a resolucao precisa
+    acompanhar o tamanho em que o mapa sera exibido.
+
+    Devolve None se o arquivo ainda nao foi baixado — a pagina cai para o
+    ranking em barras, que mostra exatamente os mesmos numeros.
     """
-    caminho: Path = geo_path() / GEOJSON_NOME
+    nome = GEOJSON_LEVE if resolucao == "leve" else GEOJSON_NOME
+    caminho: Path = geo_path() / nome
     if not caminho.exists():
+        # A malha leve e opcional: sem ela, o mini-mapa usa a de detalhe.
+        if resolucao == "leve":
+            return geojson_municipios("detalhe")
         return None
     with caminho.open("r", encoding="utf-8") as fh:
         return json.load(fh)

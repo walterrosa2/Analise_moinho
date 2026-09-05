@@ -5,6 +5,46 @@ Histórico em ordem inversa (mais recente no topo). Complementa
 
 ---
 
+## 2026-09-05 10:30 - Claude Code (Opus 5) - Correção: mapas da página Potencial MG não apareciam
+
+- **Sintoma relatado:** "As três camadas, lado a lado não estão visíveis".
+- **Feito:** três defeitos empilhados, todos encontrados abrindo a tela num navegador
+  real (Playwright instalado no venv) e lendo o DOM — `AppTest` executa o Python da
+  página mas não renderiza o front-end, por isso os 99 testes passavam com a tela
+  quebrada.
+  1. **`locationmode`**: `go.Choropleth` usa default `ISO-3`. Com GeoJSON próprio, o
+     Plotly ignorava `featureidkey` e tentava ler `3100104` como código de país —
+     subplot criado, zero polígonos. Corrigido com `locationmode="geojson-id"` em
+     `p13_potencial_mg.py` **e** em `p04_regional.py`, que tinha o mesmo padrão.
+  2. **Orientação dos anéis**: o d3-geo (motor do Plotly) usa a convenção INVERSA à do
+     RFC 7946 — espera exterior HORÁRIO. A malha do IBGE vem anti-horária (correta como
+     GeoJSON), e cada município era desenhado como "o planeta menos este município":
+     um retângulo sólido cobrindo o painel. `simplificar_malha` agora normaliza.
+  3. **`pandas` lazy em thread**: o Plotly importa pandas dentro de `update_layout`;
+     duas threads do Streamlit entrando juntas davam
+     `partially initialized module 'pandas'` e derrubavam a tela de forma
+     intermitente. `import pandas` explícito em `app/components/ui.py`.
+- **De quebra:** a malha bruta (1,8 MB) viajava uma vez por figura e o Streamlit
+  renderiza todas as abas de uma vez → ~11 MB por carga. Agora é baixada em qualidade
+  mínima e simplificada por Douglas-Peucker em duas resoluções (`detalhe` 398 KB,
+  `leve` 236 KB), ~2,3 MB por carga.
+- **Verificado no navegador:** 853 polígonos em todos os mapas do p13 e 13 no p04.
+  `ruff` limpo; **103 testes** passando (4 novos de regressão).
+- **Não feito:** o relatório publicado (artifact) não foi regerado — ele desenha o
+  próprio SVG e nunca dependeu do Plotly, então não foi afetado.
+- **Próximo passo:** nada pendente nesta frente. Segue valendo a Q-16 (homologar as
+  probabilidades de captura).
+- **Como validar:**
+  ```powershell
+  py -m pytest tests/test_mercado_mg.py     # 28 testes
+  .\_start.ps1 -SoApp                       # Comercial → "Potencial de Mercado MG"
+  ```
+- **Cuidado ao mexer:** não remover o `import pandas` de `app/components/ui.py` por
+  parecer sem uso (há teste), e não trocar a orientação dos anéis em
+  `simplificar_malha` — os dois derrubam os mapas de forma silenciosa.
+
+---
+
 ## 2026-09-05 09:40 - Claude Code (Opus 5) - Análise geográfica de potencial de mercado MG
 
 - **Feito:**

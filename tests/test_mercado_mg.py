@@ -240,6 +240,114 @@ def test_resumo_do_estado_e_coerente():
     assert r["espaco_t_mes"] >= 0
 
 
+# =====================================================================
+# 3. Malha geografica — o que faz o mapa aparecer
+# =====================================================================
+
+def test_orientar_inverte_apenas_quando_precisa():
+    """Quadrado anti-horario; o exterior deve sair horario para o d3-geo."""
+    from src.ingestion.mercado_ibge import _area_com_sinal, _orientar
+
+    anti_horario = [[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]
+    assert _area_com_sinal(anti_horario) > 0
+
+    horario = _orientar(anti_horario, anti_horario=False)
+    assert _area_com_sinal(horario) < 0
+    # ja orientado: nao mexe
+    assert _orientar(horario, anti_horario=False) == horario
+
+
+def test_simplificar_preserva_municipios_e_codigo():
+    from src.ingestion.mercado_ibge import simplificar_malha
+
+    bruta = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {"codarea": "3106200", "lixo": "descartar"},
+                "geometry": {
+                    "type": "Polygon",
+                    "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]],
+                },
+            }
+        ],
+    }
+    simples = simplificar_malha(bruta, tolerancia=0.005, casas=3)
+    assert len(simples["features"]) == 1
+    assert simples["features"][0]["properties"] == {"codarea": "3106200"}
+    anel = simples["features"][0]["geometry"]["coordinates"][0]
+    assert anel[0] == anel[-1], "o anel precisa terminar onde comecou"
+    assert len(anel) >= 4, "simplificar nunca pode degenerar um municipio"
+
+
+@pytest.mark.skipif(
+    not (
+        __import__("src.ingestion.mercado_ibge", fromlist=["geo_path"]).geo_path()
+        / "mg_municipios.geojson"
+    ).exists(),
+    reason="Malha não baixada. Rode: py scripts/build_mercado_mg.py",
+)
+def test_malha_publicada_esta_orientada_para_o_d3():
+    """
+    Regressao do bug que deixava os mapas em branco.
+
+    O d3-geo (motor do Plotly) usa a convencao INVERSA a do RFC 7946: espera o
+    anel externo no sentido HORARIO. Com o exterior anti-horario, cada municipio
+    passa a significar "todo o planeta menos este municipio" e o painel vira um
+    retangulo solido - foi exatamente o sintoma relatado.
+    """
+    import json
+
+    from src.ingestion.mercado_ibge import (
+        GEOJSON_LEVE,
+        GEOJSON_NOME,
+        _area_com_sinal,
+        geo_path,
+    )
+
+    for nome in (GEOJSON_NOME, GEOJSON_LEVE):
+        caminho = geo_path() / nome
+        if not caminho.exists():
+            continue
+        malha = json.loads(caminho.read_text(encoding="utf-8"))
+        assert len(malha["features"]) == 853, f"{nome}: municipios faltando"
+
+        anti_horarios = 0
+        for f in malha["features"]:
+            g = f["geometry"]
+            poligonos = (
+                [g["coordinates"]] if g["type"] == "Polygon" else g["coordinates"]
+            )
+            for poligono in poligonos:
+                if _area_com_sinal(poligono[0]) > 0:
+                    anti_horarios += 1
+        assert anti_horarios == 0, (
+            f"{nome}: {anti_horarios} anéis externos anti-horários — "
+            "o Plotly desenharia o complemento e o mapa ficaria em branco"
+        )
+
+
+def test_ui_importa_pandas_antes_do_plotly():
+    """
+    Regressao do erro intermitente 'partially initialized module pandas'.
+
+    O Plotly importa pandas de forma preguicosa dentro de update_layout. Com o
+    Streamlit rodando paginas em threads, duas entradas simultaneas nesse import
+    derrubavam a tela. O import explicito em app/components/ui.py resolve o
+    modulo uma vez so — se alguem remover por parecer nao usado, isto falha.
+    """
+    import sys
+
+    from app.components import ui  # noqa: F401
+
+    assert "pandas" in sys.modules
+    fonte = (
+        __import__("pathlib").Path(ui.__file__).read_text(encoding="utf-8")
+    )
+    assert "import pandas" in fonte
+
+
 @pytestmark_integracao
 def test_territorio_so_contem_municipios_de_mg():
     fora = read_sql(

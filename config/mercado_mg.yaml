@@ -48,7 +48,16 @@ fontes_ibge:
     classificacao: 12762    # CNAE 2.0
   malha:
     url: "https://servicodados.ibge.gov.br/api/v3/malhas/estados/{uf}"
-    qualidade: "intermediaria"   # minima | intermediaria | maxima
+    qualidade: "minima"   # minima | intermediaria | maxima
+    # O Plotly serializa o GeoJSON inteiro dentro de CADA figura, e o Streamlit
+    # renderiza todas as abas de uma vez — a malha viaja uma vez por mapa. Com a
+    # malha bruta (1,8 MB), uma carga da página empurrava ~11 MB ao navegador e
+    # os mapas não apareciam. Duas resoluções resolvem sem perder leitura:
+    #   detalhe = mapas grandes (~700 px)   leve = mini-mapas do painel (~330 px)
+    # tolerancia em graus (0,01 ≈ 1,1 km); casas = precisão das coordenadas.
+    simplificacao:
+      detalhe: {tolerancia: 0.005, casas: 3}
+      leve:    {tolerancia: 0.020, casas: 2}
 
 # ---------------------------------------------------------------------
 # Segmentos de mercado consumidores de farinha

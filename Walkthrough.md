@@ -126,8 +126,8 @@ py scripts/run_pipeline.py --etapa mercado
 py scripts/run_pipeline.py --etapa geografia
 
 # 3. Testes
-py -m pytest tests/test_mercado_mg.py -v     # 24 testes
-py -m pytest                                  # suíte completa: 99 testes
+py -m pytest tests/test_mercado_mg.py -v     # 28 testes
+py -m pytest                                  # suíte completa: 103 testes
 
 # 4. Abrir a tela
 .\_start.ps1 -SoApp    # menu Comercial → "Potencial de Mercado MG"
@@ -155,6 +155,87 @@ potencial capturavel         2531.4 t/mes
 | `test_grafia_ambigua_nao_escolhe_sozinha` | `IRAI` não vira *Miraí* no palpite |
 | `test_classificacao_cobre_todos_os_municipios` | município sem venda nunca é "venda alta" |
 | `test_capturavel_nunca_excede_o_enderecavel` | a probabilidade é fração, não multiplicador |
+
+---
+
+## 4-bis. Por que os mapas não apareciam (e o que os conserta)
+
+Relatado após a primeira entrega: *"As três camadas, lado a lado não estão visíveis"*.
+Eram **três defeitos empilhados**, encontrados abrindo a tela num navegador real
+(Playwright) e lendo o DOM — nenhum deles aparecia nos testes, porque `AppTest`
+executa o Python da página mas não renderiza o front-end.
+
+### 1. `locationmode` — o mapa montava e não desenhava nada
+
+`go.Choropleth` tem `locationmode` com default **`"ISO-3"`**. Com um GeoJSON próprio,
+o Plotly ignorava `featureidkey` e tentava ler `3100104` como código de país: o
+subplot `geo` era criado, e **zero polígonos** eram desenhados.
+
+```python
+locationmode="geojson-id"   # sem isto, nenhum município casa
+```
+
+Afetava também `p04_regional.py`, que usa o mesmo padrão com o mapa por UF —
+corrigido junto.
+
+### 2. Orientação dos anéis — o painel virava um bloco sólido
+
+Com o `locationmode` corrigido, os 853 polígonos passaram a existir, mas cada `path`
+saía assim:
+
+```
+d = "M0,67.9 L291,67.9 L291,306.3 L0,306.3 Z M95.6,184.0 …"
+       └──── retângulo cobrindo o painel inteiro ────┘  └─ o município ─┘
+```
+
+Isto é o desenho de *"todo o planeta menos este município"*. O motor de mapas do
+Plotly é o **d3-geo**, que interpreta orientação na esfera e adota a convenção
+**inversa à do RFC 7946**: para o d3, o anel externo é o **horário**. A malha do IBGE
+segue o RFC (anti-horário) — correta como GeoJSON, errada para o d3.
+
+`simplificar_malha` agora normaliza a orientação: exterior horário, buracos
+anti-horário. Coberto por `test_malha_publicada_esta_orientada_para_o_d3`.
+
+### 3. `pandas` importado de forma preguiçosa dentro de threads
+
+Erro **intermitente** que derrubava a tela inteira ao trocar de aba:
+
+```
+AttributeError: partially initialized module 'pandas' has no attribute 'Series'
+(most likely due to a circular import)
+```
+
+O projeto usa polars, mas o Plotly importa pandas por dentro de `update_layout` /
+`update_geos`. O Streamlit roda cada página numa thread; duas entrando nesse import
+ao mesmo tempo quebravam. O `import pandas` explícito em `app/components/ui.py`
+resolve o módulo uma vez só — com teste para que ninguém o remova por parecer não
+utilizado.
+
+### De quebra: o peso da malha
+
+O Plotly serializa o GeoJSON **inteiro dentro de cada figura**, e o Streamlit
+renderiza **todas as abas de uma vez**. Com a malha bruta (1,8 MB) e 7 mapas, uma
+carga da página empurrava ~11 MB ao navegador. A malha passou a ser baixada em
+qualidade mínima e simplificada por Douglas-Peucker em duas resoluções:
+
+| Resolução | Uso | Tamanho |
+|---|---|---|
+| `detalhe` | mapas grandes (~700 px) | 398 KB |
+| `leve` | mini-mapas do painel (~330 px) | 236 KB |
+
+Total por carga: **~2,3 MB** contra os 11 MB anteriores, sem perda de leitura.
+
+### Como foi verificado
+
+Navegador real, contando polígonos efetivamente desenhados por mapa:
+
+```
+1 · Vendas por cidade        mapas visíveis: [{'poligonos': 853}]
+2 · Territórios dos RCAs     mapas visíveis: [{'poligonos': 853}]
+3 · Potencial de farinha     mapas visíveis: [{'poligonos': 853}]
+Sobreposição · White Space   mapas visíveis: [{'poligonos': 853}]
+Regional e Territorial       mapas visíveis: [{'poligonos':  13}]
+```
 
 ---
 

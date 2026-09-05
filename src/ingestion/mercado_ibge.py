@@ -35,7 +35,14 @@ BACKOFF_S = 3
 
 ARQ_MUNICIPIOS = "mercado_mg_municipios"
 ARQ_CNAE = "mercado_mg_cnae"
+
+# Duas resolucoes da mesma malha, porque um mini-mapa de 330 px e um mapa de
+# 700 px nao precisam do mesmo numero de vertices. O Plotly serializa o GeoJSON
+# INTEIRO dentro de cada figura, e o Streamlit renderiza todas as abas de uma
+# vez: sem isso, uma unica carga da pagina empurra a malha sete vezes para o
+# navegador. Ver `simplificar_malha`.
 GEOJSON_NOME = "mg_municipios.geojson"
+GEOJSON_LEVE = "mg_municipios_leve.geojson"
 
 
 def config() -> dict[str, Any]:
@@ -210,26 +217,148 @@ def baixar_empresas_cnae() -> pl.DataFrame:
 # ---------------------------------------------------------------------
 # 4. Malha municipal (GeoJSON)
 # ---------------------------------------------------------------------
-def baixar_malha(forcar: bool = False) -> Path:
-    """GeoJSON dos municipios de MG. Fica em data/geo/, fora do banco."""
-    cfg = config()
-    destino = geo_path() / GEOJSON_NOME
-    if destino.exists() and not forcar:
-        logger.info(f"Malha ja em cache: {destino.name}")
-        return destino
+def _douglas_peucker(pontos: list[tuple[float, float]], tolerancia: float) -> list:
+    """
+    Descarta vertices que nao mudam a forma percebida da fronteira.
 
-    malha = cfg["fontes_ibge"]["malha"]
+    Tolerancia em graus: 0,01 grau ~ 1,1 km. Num mapa que mostra Minas inteira
+    em 700 px, 1 km vale menos de um pixel - o vertice nao existe para o leitor,
+    mas custa bytes em toda carga da pagina.
+    """
+    if len(pontos) < 3:
+        return list(pontos)
+
+    def distancia(p, a, b) -> float:
+        (x, y), (x1, y1), (x2, y2) = p, a, b
+        dx, dy = x2 - x1, y2 - y1
+        if dx == 0 and dy == 0:
+            return ((x - x1) ** 2 + (y - y1) ** 2) ** 0.5
+        t = max(0.0, min(1.0, ((x - x1) * dx + (y - y1) * dy) / (dx * dx + dy * dy)))
+        return ((x - (x1 + t * dx)) ** 2 + (y - (y1 + t * dy)) ** 2) ** 0.5
+
+    pilha = [(0, len(pontos) - 1)]
+    manter = {0, len(pontos) - 1}
+    while pilha:
+        inicio, fim = pilha.pop()
+        maior, indice = 0.0, inicio
+        for i in range(inicio + 1, fim):
+            d = distancia(pontos[i], pontos[inicio], pontos[fim])
+            if d > maior:
+                maior, indice = d, i
+        if maior > tolerancia:
+            manter.add(indice)
+            pilha.append((inicio, indice))
+            pilha.append((indice, fim))
+    return [pontos[i] for i in sorted(manter)]
+
+
+def _area_com_sinal(anel: list) -> float:
+    """Formula do cadarco. Positiva = anel anti-horario."""
+    total = 0.0
+    for i in range(len(anel) - 1):
+        x1, y1 = anel[i]
+        x2, y2 = anel[i + 1]
+        total += x1 * y2 - x2 * y1
+    return total / 2.0
+
+
+def _orientar(anel: list, anti_horario: bool) -> list:
+    """
+    Forca a orientacao do anel (RFC 7946: exterior anti-horario, buraco horario).
+
+    O motor de mapas do Plotly e o d3-geo, que interpreta orientacao na ESFERA e
+    adota a convencao INVERSA a do RFC 7946: para o d3, o anel externo e o
+    HORARIO. Um exterior anti-horario deixa de significar "este municipio" e
+    passa a significar "todo o resto do planeta menos este municipio" - na tela,
+    um retangulo solido cobrindo o painel, com o municipio recortado dentro.
+
+    A malha do IBGE segue o RFC 7946 (exterior anti-horario), que e o correto
+    como GeoJSON e o errado para o d3. Por isso a inversao aqui.
+    """
+    if (_area_com_sinal(anel) > 0) != anti_horario:
+        return anel[::-1]
+    return anel
+
+
+def simplificar_malha(malha: dict, tolerancia: float, casas: int) -> dict:
+    """
+    Reduz a malha preservando o que o mapa precisa: o codigo do municipio e um
+    poligono fechado, com a orientacao que o d3-geo espera. Um anel que ficaria
+    degenerado (menos de 4 pontos) mantem a forma original - simplificar nunca
+    pode fazer um municipio sumir.
+    """
+    def anel(coordenadas: list) -> list:
+        pontos = [(float(c[0]), float(c[1])) for c in coordenadas]
+        simples = _douglas_peucker(pontos, tolerancia) if tolerancia else pontos
+        arredondado = [[round(x, casas), round(y, casas)] for x, y in simples]
+        sem_repetidos: list = [arredondado[0]]
+        for p in arredondado[1:]:
+            if p != sem_repetidos[-1]:
+                sem_repetidos.append(p)
+        if len(sem_repetidos) < 4:
+            sem_repetidos = [[round(x, casas), round(y, casas)] for x, y in pontos]
+        if sem_repetidos[0] != sem_repetidos[-1]:
+            sem_repetidos.append(sem_repetidos[0])
+        return sem_repetidos
+
+    def poligono(aneis: list) -> list:
+        # Primeiro anel e o contorno externo (horario, para o d3); o resto, buraco.
+        return [
+            _orientar(anel(r), anti_horario=(i != 0)) for i, r in enumerate(aneis)
+        ]
+
+    feicoes = []
+    for f in malha.get("features", []):
+        geometria = f["geometry"]
+        if geometria["type"] == "Polygon":
+            coords = poligono(geometria["coordinates"])
+        else:
+            coords = [poligono(p) for p in geometria["coordinates"]]
+        feicoes.append({
+            "type": "Feature",
+            # So o codigo do municipio sobrevive: e a unica propriedade que o
+            # mapa usa para casar com o dado (featureidkey).
+            "properties": {"codarea": str(f["properties"]["codarea"])},
+            "geometry": {"type": geometria["type"], "coordinates": coords},
+        })
+    return {"type": "FeatureCollection", "features": feicoes}
+
+
+def baixar_malha(forcar: bool = False) -> dict[str, Path]:
+    """
+    GeoJSON dos municipios de MG em duas resolucoes. Fica em data/geo/, nunca
+    no banco. Devolve {'detalhe': Path, 'leve': Path}.
+    """
+    cfg = config()
+    malha_cfg = cfg["fontes_ibge"]["malha"]
+    destinos = {"detalhe": geo_path() / GEOJSON_NOME, "leve": geo_path() / GEOJSON_LEVE}
+
+    if all(p.exists() for p in destinos.values()) and not forcar:
+        logger.info("Malha ja em cache (detalhe + leve)")
+        return destinos
+
     url = (
-        malha["url"].format(uf=cfg["codigo_uf_ibge"])
+        malha_cfg["url"].format(uf=cfg["codigo_uf_ibge"])
         + "?formato=application/vnd.geo+json"
         + "&intrarregiao=municipio"
-        + f"&qualidade={malha['qualidade']}"
+        + f"&qualidade={malha_cfg['qualidade']}"
     )
-    bruto = _get(url)
-    destino.write_bytes(bruto)
-    n = len(json.loads(bruto).get("features", []))
-    logger.info(f"Malha municipal MG: {n} feicoes, {len(bruto) / 1024:.0f} KB")
-    return destino
+    bruta = json.loads(_get(url))
+    n = len(bruta.get("features", []))
+
+    for chave, destino in destinos.items():
+        params = malha_cfg["simplificacao"][chave]
+        simples = simplificar_malha(bruta, float(params["tolerancia"]), int(params["casas"]))
+        texto = json.dumps(simples, separators=(",", ":"))
+        destino.write_text(texto, encoding="utf-8")
+        logger.info(
+            f"Malha '{chave}': {len(simples['features'])} feicoes, "
+            f"{len(texto) / 1024:.0f} KB"
+        )
+
+    if len(bruta.get("features", [])) != n:
+        logger.warning("Contagem de feicoes mudou apos simplificacao")
+    return destinos
 
 
 # ---------------------------------------------------------------------
