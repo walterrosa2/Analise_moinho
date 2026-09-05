@@ -85,15 +85,14 @@ def require_auth() -> None:
         )
 
         with st.form("login_form", clear_on_submit=False):
+            # Sem placeholder de exemplo: a tela de login não sugere credencial.
             username = st.text_input(
                 "Usuário",
-                placeholder="Ex.: admin",
                 autocomplete="username",
             )
             password = st.text_input(
                 "Senha",
                 type="password",
-                placeholder="Ex.: admin",
                 autocomplete="current-password",
             )
             submitted = st.form_submit_button(

@@ -31,3 +31,4 @@ _trash/
 !data/parquet/*.parquet
 !data/parquet/.gitkeep
 !data/input/.gitkeep
+!data/geo/*.geojson

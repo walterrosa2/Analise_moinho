@@ -252,3 +252,39 @@ mesmo a de venda e (b) que os extremos são erro de cadastro no ERP, não um con
 diferente aplicado em datas específicas.
 
 **Decide:** controladoria + TI do Moinho.
+
+
+---
+
+## Q-16 · Probabilidade de captura por segmento (potencial de mercado MG)
+
+**Status:** aberta — bloqueia o uso do potencial como meta.
+
+O mapa de White Space de Minas depende de um parâmetro que não veio de dado nenhum:
+a fração do mercado de cada município que um moinho regional realisticamente disputa.
+Os valores atuais em `config/mercado_mg.yaml` são uma primeira leitura:
+
+| Segmento | CNAE | Probabilidade de captura assumida |
+|---|---|---|
+| Panificação e confeitaria | 10.91-1 | 25% |
+| Biscoitos e bolachas | 10.92-9 | 15% |
+| Massas alimentícias | 10.94-5 | 20% |
+| Alimentos e pratos prontos | 10.96-1 | 20% |
+| Food service | 56.11-2 | 5% |
+| Atacado de cereais e farinhas | 46.32-0 | 30% |
+| Atacado de alimentos em geral | 46.39-7 | 25% |
+| Varejo de padaria e mercearia | 47.21-1 | 8% |
+
+Três segmentos (massas, pratos prontos e atacado de alimentos) têm menos de cinco
+clientes na amostra do Moinho e usam consumo de `FALLBACK`, derivado da intensidade
+relativa em vez do consumo observado — estão marcados como tal na tela.
+
+**O que resolveria:** cruzar o CNPJ dos clientes atuais com a base aberta da Receita
+Federal, obtendo CNAE e porte reais de cada cliente. Com isso, o consumo por porte
+deixa de ser mediana de um perfil comercial e passa a ser mediana de uma classe
+econômica observável — que é o método recomendado pela pesquisa de mercado.
+
+**Enquanto isso:** os números ordenam prioridade entre municípios (posição relativa),
+e não devem virar orçamento (valor absoluto).
+
+**Decide:** direção comercial do Moinho.

@@ -12,6 +12,13 @@ from html import escape
 from math import isfinite
 from typing import Any
 
+# O projeto usa polars, mas o Plotly importa pandas de forma preguicosa dentro
+# de update_layout/update_geos. O Streamlit roda cada pagina numa thread, e duas
+# threads entrando nesse import ao mesmo tempo produzem "partially initialized
+# module 'pandas' ... most likely due to a circular import" — erro intermitente
+# que derrubava a tela inteira. Importar junto com o plotly resolve o import uma
+# vez so, e toda pagina passa por aqui. Nao remover por parecer sem uso.
+import pandas  # noqa: F401
 import plotly.graph_objects as go
 import polars as pl
 import streamlit as st

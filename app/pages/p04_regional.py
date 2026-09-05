@@ -73,6 +73,9 @@ with abas[0]:
             locations=uf["rotulo"].to_list(),
             z=[float(v or 0) for v in uf[metrica].to_list()],
             featureidkey="properties.sigla",
+            # Sem locationmode='geojson-id' o Plotly cai no default 'ISO-3' e
+            # tenta casar 'MG' com codigo de pais: o mapa monta e fica vazio.
+            locationmode="geojson-id",
             colorscale="Teal", marker_line_color="rgba(255,255,255,0.3)",
         ))
         fig.update_geos(fitbounds="locations", visible=False)
