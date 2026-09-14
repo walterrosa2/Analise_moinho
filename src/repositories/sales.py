@@ -321,7 +321,7 @@ def opcoes_filtro() -> dict[str, pl.DataFrame]:
     """Valores disponiveis para os seletores da barra lateral."""
     return {
         "periodos": read_sql(
-            "SELECT DISTINCT ano_mes FROM analytics.mv_sales_month ORDER BY ano_mes"
+            "SELECT DISTINCT ano_mes FROM analytics.mv_sales_month WHERE ano_mes <= '2026-07' ORDER BY ano_mes"
         ),
         "classificacoes": read_sql(
             "SELECT DISTINCT classificacao FROM analytics.dim_produto "

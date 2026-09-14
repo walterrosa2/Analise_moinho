@@ -57,9 +57,9 @@ class Filtros:
             if self.periodo_inicio:
                 clausulas.append(f"{periodo} >= :periodo_inicio")
                 params["periodo_inicio"] = self.periodo_inicio
-            if self.periodo_fim:
-                clausulas.append(f"{periodo} <= :periodo_fim")
-                params["periodo_fim"] = self.periodo_fim
+            fim = self.periodo_fim or "2026-07"
+            clausulas.append(f"{periodo} <= :periodo_fim")
+            params["periodo_fim"] = fim
 
         add_in("empresa", self.empresas, "emp")
         add_in("classificacao", self.classificacoes, "cla")
