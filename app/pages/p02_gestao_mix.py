@@ -183,8 +183,14 @@ with abas[3]:
             ).sort("ano_mes")
             fig = ui.barra(resumo, "ano_mes", "ORÇADO", "Orçado × realizado (R$)", altura=380)
             fig.data[0].name = "Orçado"
-            fig.add_bar(x=resumo["ano_mes"].to_list(), y=resumo["REALIZADO"].to_list(),
-                        name="Realizado", marker_color=ui.CORES[2])
+            fig.data[0].hovertemplate = "<b>%{x}</b><br>Orçado: %{y:,.2f}<extra></extra>"
+            fig.add_bar(
+                x=resumo["ano_mes"].to_list(),
+                y=resumo["REALIZADO"].to_list(),
+                name="Realizado",
+                marker_color=ui.CORES[2],
+                hovertemplate="<b>%{x}</b><br>Realizado: %{y:,.2f}<extra></extra>",
+            )
             fig.update_layout(barmode="group", showlegend=True)
             ui.grafico(fig, resumo, "orcado_realizado")
             ui.tabela(pivot.sort(["ano_mes", "desc_cla"]), f"orcado_realizado_{ano}",

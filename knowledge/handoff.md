@@ -5,6 +5,43 @@ Histórico em ordem inversa (mais recente no topo). Complementa
 
 ---
 
+## 2026-09-14 07:50 - Antigravity (Gemini 3.7 Flash) - Eliminação de "undefined" em todos os Gráficos da Plataforma
+
+- **Session ID:** 846d2417-c450-4d2c-beb0-b76a8a47741c
+- **Feito:**
+  - Diagnóstico da causa raiz da exibição da string `"undefined"` nos tooltips e hovers do Plotly.js:
+    1. O modo `hovermode="x unified"` em `app/components/ui.py` gerava cabeçalhos inválidos quando havia múltiplos eixos (`yaxis2`), traces combinados (barras + linhas) ou traces sem nome/formatação explícita.
+    2. Traces adicionados manualmente e construtores base não possuíam tags de supressão de caixa secundária `<extra></extra>` nem `hovertemplate` estruturado.
+  - Refatoração de `app/components/ui.py`:
+    - Atualização do `_layout` com `hovermode="closest"` e remoção de conflitos de eixos secundários.
+    - Implementação de mapeamento amigável de nomes de colunas e métricas (`_rotulo_amigavel`).
+    - Definição de `hovertemplate` detalhado, formatado em pt-BR e com tag `<extra></extra>` em todos os geradores (`linha`, `barra`, `area_empilhada`, `barras_empilhadas`, `dispersao`, `waterfall`, `heatmap`, `treemap`, `pareto`, `boxplot`).
+  - Atualização dos traces manuais nas páginas:
+    - `app/pages/p00_visao_geral.py`: Hover explícito no gráfico Receita e Volume (com eixo secundário de Toneladas).
+    - `app/pages/p02_gestao_mix.py`: Hover explícito no comparativo Orçado × Realizado.
+    - `app/pages/p03_vendas.py`: Hover explícito em Vendas × Devoluções e PMV × Desconto.
+    - `app/pages/p04_regional.py`: Inclusão de `text` e `hovertemplate` no mapa coroplético de estados (UFs).
+  - Execução e aprovação da suíte de 103 testes no Pytest e 100% de conformidade no linter Ruff.
+- **Nao feito:** nada pendente.
+- **Proximo passo:** uso e apresentação da plataforma com gráficos limpos e sem qualquer ruído visual.
+- **Como validar:** navegar pelas páginas no Streamlit (`http://localhost:8501`) e passar o mouse sobre qualquer gráfico e trace.
+
+---
+
+## 2026-09-14 07:35 - Antigravity (Gemini 3.7 Flash) - Inserção da Logo Oficial na Plataforma
+
+- **Session ID:** 92a17a43-d8a2-4571-89f5-79f3eb718829
+- **Feito:**
+  - Importação do arquivo de logo oficial `Logo_moinho.jpeg` para `app/assets/logo_moinho.jpeg`.
+  - Configuração nativa no Streamlit com `st.logo(str(LOGO_PATH), size="large")` em `app/main.py` para renderização destacada no topo da barra lateral (sidebar) em todas as páginas da plataforma.
+  - Atualização da tela de login em `app/components/auth.py` para exibir a logo oficial com layout premium antes da autenticação.
+  - Validação visual automatizada via Playwright gerando evidência em `artifacts/valida_logo_sidebar.png`.
+- **Nao feito:** nada pendente.
+- **Proximo passo:** navegação contínua na plataforma com a identidade visual completa.
+- **Como validar:** acessar `http://localhost:8501` ou conferir a captura em `artifacts/valida_logo_sidebar.png`.
+
+---
+
 ## 2026-09-14 07:15 - Antigravity (Gemini 3.7 Flash) - Inserção de gráficos da plataforma e notas do orador no PPTX
 
 - **Session ID:** 92a17a43-d8a2-4571-89f5-79f3eb718829

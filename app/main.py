@@ -57,6 +57,10 @@ if not ping():
     )
     st.stop()
 
+LOGO_PATH = ROOT / "app" / "assets" / "logo_moinho.jpeg"
+if LOGO_PATH.exists():
+    st.logo(str(LOGO_PATH), size="large")
+
 ui.guia_rapido_navegacao()
 auth.render_user_sidebar()
 

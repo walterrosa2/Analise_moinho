@@ -73,6 +73,8 @@ with abas[0]:
             locations=uf["rotulo"].to_list(),
             z=[float(v or 0) for v in uf[metrica].to_list()],
             featureidkey="properties.sigla",
+            text=uf["rotulo"].to_list(),
+            hovertemplate="<b>%{text}</b><br>%{z:,.2f}<extra></extra>",
             # Sem locationmode='geojson-id' o Plotly cai no default 'ISO-3' e
             # tenta casar 'MG' com codigo de pais: o mapa monta e fica vazio.
             locationmode="geojson-id",

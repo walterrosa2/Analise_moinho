@@ -6,7 +6,9 @@ as credenciais configuradas em Settings (AUTH_USER e AUTH_PASSWORD).
 """
 from __future__ import annotations
 
+import base64
 import hmac
+from pathlib import Path
 
 import streamlit as st
 
@@ -70,13 +72,19 @@ def require_auth() -> None:
     </style>
     """
     st.markdown(login_css, unsafe_allow_html=True)
+    logo_path = Path(__file__).resolve().parents[2] / "app" / "assets" / "logo_moinho.jpeg"
+    logo_img_tag = '<div class="login-logo">🌾</div>'
+    if logo_path.exists():
+        with open(logo_path, "rb") as img_file:
+            b64_str = base64.b64encode(img_file.read()).decode()
+            logo_img_tag = f'<div style="margin-bottom: 1rem;"><img src="data:image/jpeg;base64,{b64_str}" style="max-width: 220px; border-radius: 8px;" /></div>'
 
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         st.markdown(
-            """
+            f"""
             <div class="login-box">
-                <div class="login-logo">🌾</div>
+                {logo_img_tag}
                 <div class="login-title">Moinho Sete Irmãos</div>
                 <div class="login-subtitle">Diagnóstico Comercial &bull; Acesso Restrito</div>
             </div>

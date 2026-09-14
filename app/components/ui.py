@@ -178,6 +178,43 @@ def guia_rapido_navegacao() -> None:
 # ---------------------------------------------------------------------
 # Graficos
 # ---------------------------------------------------------------------
+# Graficos
+# ---------------------------------------------------------------------
+
+
+ROTULOS_METRICAS: dict[str, str] = {
+    "receita_liquida": "Receita Líquida",
+    "vendas_brutas": "Vendas Brutas",
+    "devolucoes": "Devoluções",
+    "ton_liquida": "Volume (t)",
+    "pmv": "PMV (R$/t)",
+    "clientes": "Clientes Ativos",
+    "documentos": "Documentos (Notas)",
+    "desconto": "Desconto Concedido",
+    "frete": "Frete Alocado",
+    "custo": "Custo",
+    "receita_com_custo": "Receita com Custo",
+    "margem_proxy": "Margem Proxy",
+    "margem_proxy_pct": "Margem Proxy (%)",
+    "frete_por_ton": "Frete (R$/t)",
+    "frete_sobre_receita": "Frete sobre Receita (%)",
+    "valor": "Valor",
+    "variacao": "Variação",
+    "variacao_pct": "Variação (%)",
+    "potencial_t_mes": "Potencial (t/mês)",
+    "capturavel_t_mes": "Capturável (t/mês)",
+    "venda_t_mes": "Venda Atual (t/mês)",
+    "espaco_t_mes": "Espaço / White Space (t/mês)",
+    "estabelecimentos": "Estabelecimentos",
+    "populacao_2022": "População",
+    "produtos": "Qtd Produtos",
+    "linhas": "Qtd Itens",
+}
+
+
+def _rotulo_amigavel(coluna: str | Any) -> str:
+    c = str(coluna or "").strip()
+    return ROTULOS_METRICAS.get(c, c.replace("_", " ").title())
 
 
 def _layout(fig: go.Figure, titulo: str = "", altura: int = 380) -> go.Figure:
@@ -185,7 +222,7 @@ def _layout(fig: go.Figure, titulo: str = "", altura: int = 380) -> go.Figure:
         title=titulo or None,
         height=altura,
         margin=dict(l=10, r=10, t=40 if titulo else 10, b=10),
-        hovermode="x unified",
+        hovermode="closest",
         legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
         colorway=CORES,
         separators=",.",
@@ -205,18 +242,22 @@ def linha(
     if cor:
         for i, (chave,) in enumerate(df.select(cor).unique().sort(cor).iter_rows()):
             sub = df.filter(pl.col(cor) == chave).sort(x)
+            rot_nome = str(chave or "")
             fig.add_trace(go.Scatter(
-                x=sub[x].to_list(), y=sub[y].to_list(), name=str(chave),
+                x=sub[x].to_list(), y=sub[y].to_list(), name=rot_nome,
                 mode="lines+markers", line=dict(width=2, color=CORES[i % len(CORES)]),
                 marker=dict(size=5),
+                hovertemplate=f"<b>%{{x}}</b><br>{rot_nome}: %{{y:,.2f}}<extra></extra>",
             ))
     else:
         colunas = [y] if isinstance(y, str) else y
         for i, c in enumerate(colunas):
+            rot_nome = _rotulo_amigavel(c)
             fig.add_trace(go.Scatter(
-                x=df[x].to_list(), y=df[c].to_list(), name=c,
+                x=df[x].to_list(), y=df[c].to_list(), name=rot_nome,
                 mode="lines+markers", line=dict(width=2, color=CORES[i % len(CORES)]),
                 marker=dict(size=5),
+                hovertemplate=f"<b>%{{x}}</b><br>{rot_nome}: %{{y:,.2f}}<extra></extra>",
             ))
     return _layout(fig, titulo, altura)
 
@@ -230,11 +271,19 @@ def barra(
         [COR_POSITIVA if (v or 0) >= 0 else COR_NEGATIVA for v in valores]
         if cor_por_sinal else CORES[0]
     )
+    rot_x = _rotulo_amigavel(x)
+    rot_y = _rotulo_amigavel(y)
     if horizontal:
-        fig = go.Figure(go.Bar(x=valores, y=df[x].to_list(), orientation="h", marker_color=cores))
+        fig = go.Figure(go.Bar(
+            x=valores, y=df[x].to_list(), orientation="h", marker_color=cores,
+            hovertemplate=f"<b>%{{y}}</b><br>{rot_x}: %{{x:,.2f}}<extra></extra>",
+        ))
         fig.update_layout(yaxis=dict(autorange="reversed"))
     else:
-        fig = go.Figure(go.Bar(x=df[x].to_list(), y=valores, marker_color=cores))
+        fig = go.Figure(go.Bar(
+            x=df[x].to_list(), y=valores, marker_color=cores,
+            hovertemplate=f"<b>%{{x}}</b><br>{rot_y}: %{{y:,.2f}}<extra></extra>",
+        ))
     return _layout(fig, titulo, altura)
 
 
@@ -245,12 +294,14 @@ def area_empilhada(
     fig = go.Figure()
     for i, (chave,) in enumerate(df.select(cor).unique().sort(cor).iter_rows()):
         sub = df.filter(pl.col(cor) == chave).sort(x)
+        rot_nome = str(chave or "")
         fig.add_trace(go.Scatter(
-            x=sub[x].to_list(), y=sub[y].to_list(), name=str(chave),
+            x=sub[x].to_list(), y=sub[y].to_list(), name=rot_nome,
             mode="lines", stackgroup="um",
             groupnorm="percent" if percentual_100 else None,
             line=dict(width=0.5, color=CORES[i % len(CORES)]),
             fillcolor=CORES[i % len(CORES)],
+            hovertemplate=f"<b>%{{x}}</b><br>{rot_nome}: %{{y:.1f}}%<extra></extra>" if percentual_100 else f"<b>%{{x}}</b><br>{rot_nome}: %{{y:,.2f}}<extra></extra>",
         ))
     fig = _layout(fig, titulo, altura)
     if percentual_100:
@@ -264,9 +315,11 @@ def barras_empilhadas(
     fig = go.Figure()
     for i, (chave,) in enumerate(df.select(cor).unique().sort(cor).iter_rows()):
         sub = df.filter(pl.col(cor) == chave).sort(x)
+        rot_nome = str(chave or "")
         fig.add_trace(go.Bar(
-            x=sub[x].to_list(), y=sub[y].to_list(), name=str(chave),
+            x=sub[x].to_list(), y=sub[y].to_list(), name=rot_nome,
             marker_color=CORES[i % len(CORES)],
+            hovertemplate=f"<b>%{{x}}</b><br>{rot_nome}: %{{y:,.2f}}<extra></extra>",
         ))
     fig.update_layout(barmode="stack")
     return _layout(fig, titulo, altura)
@@ -294,20 +347,26 @@ def dispersao(
         marker["colorscale"] = "Teal"
         marker["showscale"] = True
         marker["colorbar"] = dict(
-            title=f"{cor} (nulo=0)" if tem_nulo else cor, thickness=12
+            title=f"{_rotulo_amigavel(cor)} (nulo=0)" if tem_nulo else _rotulo_amigavel(cor), thickness=12
         )
+
+    rot_x = _rotulo_amigavel(x)
+    rot_y = _rotulo_amigavel(y)
+    textos_hover = df[rotulo].to_list() if rotulo and rotulo in df.columns else None
 
     fig = go.Figure(go.Scatter(
         x=df[x].to_list(), y=df[y].to_list(), mode="markers+text" if rotulo else "markers",
-        text=df[rotulo].to_list() if rotulo else None,
+        text=textos_hover,
         textposition="top center", textfont=dict(size=9),
         marker=marker,
-        hovertext=df[rotulo].to_list() if rotulo else None,
+        hovertext=textos_hover,
+        hovertemplate=(f"<b>%{{hovertext}}</b><br>{rot_x}: %{{x:,.2f}}<br>{rot_y}: %{{y:,.2f}}<extra></extra>"
+                       if rotulo else f"{rot_x}: %{{x:,.2f}}<br>{rot_y}: %{{y:,.2f}}<extra></extra>"),
     ))
     fig = _layout(fig, titulo, altura)
     fig.update_layout(hovermode="closest")
-    fig.update_xaxes(title=x)
-    fig.update_yaxes(title=y)
+    fig.update_xaxes(title=rot_x)
+    fig.update_yaxes(title=rot_y)
     return fig
 
 
@@ -323,6 +382,7 @@ def waterfall(
         increasing=dict(marker=dict(color=COR_POSITIVA)),
         decreasing=dict(marker=dict(color=COR_NEGATIVA)),
         totals=dict(marker=dict(color=CORES[0])),
+        hovertemplate="<b>%{x}</b><br>Variação: %{y:,.2f}<extra></extra>",
     ))
     return _layout(fig, titulo, altura)
 
@@ -336,6 +396,7 @@ def heatmap(
         z=[[row[c] for c in colunas] for row in pivot.iter_rows(named=True)],
         x=colunas, y=pivot[y].to_list(),
         colorscale="Teal", hoverongaps=False,
+        hovertemplate="<b>%{y} — %{x}</b><br>Valor: %{z:,.2f}<extra></extra>",
     ))
     return _layout(fig, titulo, altura)
 
@@ -350,6 +411,7 @@ def treemap(
         values=[abs(v or 0) for v in df[valores].to_list()],
         textinfo="label+value+percent root",
         marker=dict(colorscale="Teal"),
+        hovertemplate="<b>%{label}</b><br>Valor: %{value:,.2f}<extra></extra>",
     ))
     return _layout(fig, titulo, altura)
 
@@ -365,12 +427,19 @@ def pareto(
         soma += float(v or 0)
         acumulado.append(100 * soma / total)
 
+    rot_v = _rotulo_amigavel(valor)
     fig = go.Figure()
-    fig.add_trace(go.Bar(x=d[categoria].to_list(), y=d[valor].to_list(),
-                         name=valor, marker_color=CORES[0]))
-    fig.add_trace(go.Scatter(x=d[categoria].to_list(), y=acumulado, name="% acumulado",
-                             yaxis="y2", mode="lines+markers",
-                             line=dict(color=CORES[1], width=2)))
+    fig.add_trace(go.Bar(
+        x=d[categoria].to_list(), y=d[valor].to_list(),
+        name=rot_v, marker_color=CORES[0],
+        hovertemplate=f"<b>%{{x}}</b><br>{rot_v}: %{{y:,.2f}}<extra></extra>",
+    ))
+    fig.add_trace(go.Scatter(
+        x=d[categoria].to_list(), y=acumulado, name="% acumulado",
+        yaxis="y2", mode="lines+markers",
+        line=dict(color=CORES[1], width=2),
+        hovertemplate="<b>%{x}</b><br>% Acumulado: %{y:.1f}%<extra></extra>",
+    ))
     fig = _layout(fig, titulo, altura)
     fig.update_layout(
         yaxis2=dict(overlaying="y", side="right", range=[0, 105], ticksuffix="%", showgrid=False)
@@ -382,10 +451,15 @@ def boxplot(
     df: pl.DataFrame, categoria: str, valor: str, titulo: str = "", altura: int = 420
 ) -> go.Figure:
     fig = go.Figure()
+    rot_val = _rotulo_amigavel(valor)
     for i, (chave,) in enumerate(df.select(categoria).unique().sort(categoria).iter_rows()):
         sub = df.filter(pl.col(categoria) == chave)
-        fig.add_trace(go.Box(y=sub[valor].to_list(), name=str(chave),
-                             marker_color=CORES[i % len(CORES)], boxpoints="outliers"))
+        rot_cat = str(chave or "")
+        fig.add_trace(go.Box(
+            y=sub[valor].to_list(), name=rot_cat,
+            marker_color=CORES[i % len(CORES)], boxpoints="outliers",
+            hovertemplate=f"<b>{rot_cat}</b><br>{rot_val}: %{{y:,.2f}}<extra></extra>",
+        ))
     return _layout(fig, titulo, altura)
 
 

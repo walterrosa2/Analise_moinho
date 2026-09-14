@@ -57,15 +57,27 @@ with abas[0]:
     with col1:
         ui.secao("Vendas × devoluções")
         fig = ui.linha(serie, "ano_mes", ["vendas_brutas"], altura=320)
-        fig.add_bar(x=serie["ano_mes"].to_list(),
-                    y=[abs(v or 0) for v in serie["devolucoes"].to_list()],
-                    name="Devoluções (módulo)", marker_color=ui.COR_NEGATIVA, opacity=0.6)
+        fig.add_bar(
+            x=serie["ano_mes"].to_list(),
+            y=[abs(v or 0) for v in serie["devolucoes"].to_list()],
+            name="Devoluções (módulo)",
+            marker_color=ui.COR_NEGATIVA,
+            opacity=0.6,
+            hovertemplate="<b>%{x}</b><br>Devoluções: %{y:,.2f}<extra></extra>",
+        )
         ui.grafico(fig, serie.select("ano_mes", "vendas_brutas", "devolucoes"), "vendas_devolucoes")
     with col2:
         ui.secao("PMV e desconto")
         fig = ui.linha(serie, "ano_mes", "pmv", altura=320)
-        fig.add_bar(x=serie["ano_mes"].to_list(), y=serie["desconto"].to_list(),
-                    name="Desconto", yaxis="y2", marker_color=ui.CORES[1], opacity=0.45)
+        fig.add_bar(
+            x=serie["ano_mes"].to_list(),
+            y=serie["desconto"].to_list(),
+            name="Desconto",
+            yaxis="y2",
+            marker_color=ui.CORES[1],
+            opacity=0.45,
+            hovertemplate="<b>%{x}</b><br>Desconto: %{y:,.2f}<extra></extra>",
+        )
         fig.update_layout(yaxis2=dict(overlaying="y", side="right", showgrid=False))
         ui.grafico(fig, serie.select("ano_mes", "pmv", "desconto"), "pmv_desconto")
 

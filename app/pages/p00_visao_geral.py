@@ -104,8 +104,15 @@ col1, col2 = st.columns(2)
 with col1:
     ui.secao("Receita e volume")
     fig = ui.linha(serie, "ano_mes", ["receita_liquida"], altura=320)
-    fig.add_bar(x=serie["ano_mes"].to_list(), y=serie["ton_liquida"].to_list(),
-                name="Toneladas", yaxis="y2", marker_color=ui.CORES[1], opacity=0.45)
+    fig.add_bar(
+        x=serie["ano_mes"].to_list(),
+        y=serie["ton_liquida"].to_list(),
+        name="Toneladas",
+        yaxis="y2",
+        marker_color=ui.CORES[1],
+        opacity=0.45,
+        hovertemplate="<b>%{x}</b><br>Toneladas: %{y:,.0f} t<extra></extra>",
+    )
     fig.update_layout(yaxis2=dict(overlaying="y", side="right", showgrid=False, title="t"))
     ui.grafico(fig, serie.select("ano_mes", "receita_liquida", "ton_liquida"), "receita_volume")
 
