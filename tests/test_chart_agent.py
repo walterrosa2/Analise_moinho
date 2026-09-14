@@ -22,7 +22,7 @@ def test_analisar_grafico_temporal_com_objetivo_especifico() -> None:
     analise = chart_agent.analisar("receita_volume", dados, fig)
 
     assert analise is not None
-    assert "receita líquida" in analise.objetivo
+    assert "faturamento" in analise.objetivo or "receita" in analise.objetivo
     assert any("2026-01" in linha and "2026-03" in linha for linha in analise.analise)
     assert any("Pico" in linha for linha in analise.analise)
 

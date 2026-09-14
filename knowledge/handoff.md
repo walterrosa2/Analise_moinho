@@ -5,22 +5,20 @@ Histórico em ordem inversa (mais recente no topo). Complementa
 
 ---
 
-## 2026-09-14 09:35 - Antigravity (Gemini 3.7 Flash) - Implementação de Tooltips '?' Explicativos em Gráficos, Subgráficos e KPIs
+## 2026-09-14 09:45 - Antigravity (Gemini 3.7 Flash) - Explicações Especializadas de Inteligência de Mercado Moageiro em Gráficos e Subgráficos
 
 - **Session ID:** 846d2417-c450-4d2c-beb0-b76a8a47741c
 - **Feito:**
-  - Criação do sistema de Help `?` no cabeçalho de todos os gráficos e subgráficos da plataforma:
-    - Atualização do componente `ui.secao(titulo, ajuda, explicacao)` para renderizar nativamente o ícone `?` interativo via `st.markdown(f"#### {titulo}", help=...)`.
-    - Implementação da função `chart_agent.explicacao_grafico(nome, titulo)` que sintetiza de forma executiva e didática:
-      - 🎯 **Objetivo & Racional de Negócio**: por que o gráfico existe e qual decisão apoia.
-      - 📊 **Como Funciona & Leitura**: o que cada eixo, barra, linha, cor ou tamanho representa.
-      - 🧭 **Como Interpretar**: diretrizes para identificar oportunidades, riscos e anomalias.
-  - Expansão e enriquecimento de `chart_agent.ajuda_indicador(titulo)` para todos os Cards/KPIs da plataforma (incluindo Potencial MG, Territórios de RCAs, Fretes, Clientes e Custos), detalhando **o que mede**, **cálculo/origem** e **interpretação prática**.
-  - Aprimoramento do expander `"💡 Ajuda, Racional & Como Interpretar este Gráfico"` em `ui.grafico(...)` com seções destacadas de objetivo, leitura, diagnóstico automático e ressalvas.
-  - Execução e aprovação da suíte de 103 testes no Pytest e 100% no linter Ruff.
+  - Enriquecimento integral de todos os textos explicativos de ajuda (`?`) dos gráficos, subgráficos e cards, atuando como **Analista de Inteligência de Mercado expert no setor de moagem de trigo / farinhas / panificação**:
+    - Abordagem técnica e prática em moagem (Farinhas Panificação 25/50kg, Granel, Pré-Misturas de alto valor, Doméstica e Farelo para diluição de custos fixos).
+    - Métricas chave do setor moageiro: Preço Médio de Venda (PMV R$/t), Custo de Trigo em Grão, Custo de Moagem, Margem de Contribuição Proxy, Curvas ABC/Pareto, Matriz Potencial x Vendas em MG, White Space e Cidades Órfãs sem RCA.
+  - Inclusão e garantia de Help `?` no cabeçalho de **todos os subgráficos** (ex.: *"Matriz potencial × venda (cada ponto é um município)"*, *"Mapa de White Space de Minas Gerais"*, *"As três camadas, lado a lado"*, *"As 15 cidades de maior espaço não atendido"*, *"Dispersão de preço"*, *"PMV e desconto"*, *"Vendas × devoluções"*, etc.):
+    - No componente `ui.grafico(...)`, o título do gráfico/subgráfico é extraído e renderizado via `ui.secao(titulo, ajuda=...)`, garantindo o ícone nativo `?` com tooltip rico em Markdown ao lado do nome de cada subgráfico.
+    - Base de dados `TITULOS_SECOES` e `EXATOS` em `src/insights/chart_agent.py` cobrindo títulos literais e sinônimos de todos os visuais da plataforma.
+  - Aprovação em 100% dos testes (`pytest`) e 100% no linter (`ruff`).
 - **Nao feito:** nada pendente.
-- **Proximo passo:** navegação interativa na plataforma e utilização dos tooltips `?` para suporte à tomada de decisão.
-- **Como validar:** acessar `http://localhost:8501` e passar o mouse sobre o `?` ao lado do título de qualquer gráfico ou card.
+- **Proximo passo:** uso da plataforma com suporte analítico completo nos tooltips `?`.
+- **Como validar:** acessar qualquer gráfico ou subgráfico no Streamlit (ex: *Mercado MG > Matriz Potencial x Venda*) e passar o mouse sobre o `?` ao lado do título para ler a explicação personalizada de inteligência de mercado.
 
 ---
 

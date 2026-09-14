@@ -32,251 +32,237 @@ class GraphAnalysis:
 
 
 EXATOS: dict[str, GraphSpec] = {
+    # --- VISÃO GERAL & DESEMPENHO MACRO ---
     "receita_volume": GraphSpec(
-        "Comparar a evolução da receita líquida com o volume vendido no mesmo recorte.",
-        "A linha mostra receita; as barras mostram toneladas. Quando as curvas se afastam, o PMV ou o mix provavelmente mudou.",
+        "Monitorar o ritmo conjunto de faturamento financeiro (R$) e tonelagem física expedida (t). Revela a dinâmica de repasse de preços e a qualidade do crescimento da moagem.",
+        "A linha representa a Receita Líquida (R$) e as barras representam o Volume (t). Se a receita sobe mais rápido que o volume, houve ganho de PMV (repasse de preços); se o volume cresce mas a receita estagna, o moinho está concedendo descontos excessivos ou vendendo produtos de menor valor agregado (ex.: farelo vs. farinhas especiais).",
         ("receita_liquida", "ton_liquida"),
     ),
     "pmv": GraphSpec(
-        "Acompanhar a variação mensal do preço médio de venda.",
-        "Subidas e quedas do PMV devem ser lidas junto com volume e mix, porque produtos diferentes podem mover o preço médio consolidado.",
+        "Acompanhar o Preço Médio de Venda por tonelada (R$/t) consolidado da empresa ao longo dos meses. É o principal termômetro de rentabilidade e poder de precificação do moinho.",
+        "O eixo vertical mostra o PMV em R$/t faturado. Quedas persistentes de PMV indicam pressão concorrencial de outros moinhos ou mudança no mix para farinhas comuns/farelo. Subidas de PMV devem ser comparadas com o custo de reposição do trigo em grão.",
         ("pmv",),
     ),
     "mix_volume": GraphSpec(
-        "Mostrar como as classificações disputam participação no volume total.",
-        "A área 100% empilhada compara participação, não tamanho absoluto. Uma faixa maior significa mais peso no mix do período.",
+        "Analisar como as diferentes famílias de produtos (Farinhas Industriais 25/50kg, Granel, Pré-Misturas, Doméstica e Farelo) disputam a capacidade instalada de moagem.",
+        "A área 100% empilhada mostra a fatia relativa de cada categoria no volume total moído. Uma fábrica eficiente busca maximizar a participação de farinhas nobres e pré-misturas de alto valor, mantendo farinhas industriais para volume base e diluição do custo fixo de moagem.",
         ("ton_liquida",),
     ),
     "mix_receita": GraphSpec(
-        "Mostrar como as classificações disputam participação na receita total.",
-        "A área 100% empilhada compara participação em receita. Mudanças podem vir de volume, preço ou ambos.",
+        "Avaliar a composição do faturamento financeiro por categoria de produto, medindo a dependência da receita em relação a cada família de farinhas.",
+        "A área 100% empilhada expressa a participação percentual de cada categoria no faturamento em R$. Permite verificar se o crescimento financeiro está sendo puxado por produtos nobres ou se a receita está excessivamente vulnerável a commodities de margem estreita.",
         ("receita_liquida",),
     ),
     "variacao_classificacao": GraphSpec(
-        "Explicar quais classificações puxaram a receita para cima ou para baixo contra o período anterior.",
-        "Barras positivas aumentam a variação total; barras negativas reduzem. O total final é a soma das contribuições exibidas.",
+        "Decompor a variação da receita contra o período anterior entre Efeito Volume (vendeu mais ou menos sacas) e Efeito Preço (vendeu mais caro ou mais barato por saca).",
+        "Gráfico Waterfall (cascata): barras verdes para cima aumentam a receita; barras vermelhas para baixo reduzem. A barra final consolida o resultado líquido. Permite identificar se uma família de farinhas cresceu por esforço comercial em novas padarias ou por reajuste de tabela.",
         ("variacao", "efeito_volume", "efeito_preco"),
     ),
+
+    # --- GESTÃO DO MIX & DIÁRIO ---
+    "receita_diaria": GraphSpec(
+        "Acompanhar a curva de faturamento diário ao longo do mês corrente para diagnosticar a regularidade de compras das padarias e distribuidores.",
+        "O eixo horizontal mostra os dias do mês e o vertical o faturamento em R$. Concentração excessiva de faturamento nos últimos 5 dias úteis ('efeito final de mês') aponta retenção de pedidos por RCAs e gera gargalos na frota de expedição e carregamento.",
+        ("receita_liquida",),
+    ),
+    "delta_mix": GraphSpec(
+        "Medir o ganho ou perda de participação de mercado interno (em pontos percentuais de share de volume) de cada linha de produto entre dois períodos comparados.",
+        "Barras positivas indicam famílias de produtos que expandiram sua relevância na moagem; barras negativas mostram perda de espaço. Ideal para validar se estratégias de lançamento (ex.: pré-misturas especiais) estão ganhando tração real.",
+        ("delta_share_pp",),
+    ),
+    "orcado_realizado": GraphSpec(
+        "Confrontar o faturamento real realizado contra a meta orçada da diretoria comercial por categoria de produto.",
+        "Barras emparelhadas comparam Orçado (azul) vs. Realizado (amarelo) mês a mês. Variações negativas demandam intervenção imediata da gerência comercial regional na respectiva linha de produtos.",
+        ("REALIZADO", "ORÇADO"),
+    ),
+
+    # --- VENDAS & POLÍTICA COMERCIAL ---
     "vendas_devolucoes": GraphSpec(
-        "Separar venda bruta e devolução para medir o quanto retorna contra o que foi vendido.",
-        "A linha representa venda bruta; as barras mostram devoluções em módulo. Devolução alta em meses de venda alta pode indicar risco operacional ou comercial.",
+        "Monitorar o volume financeiro e físico de devoluções e recusas de carga em confronto com as vendas brutas faturadas.",
+        "A linha azul representa Vendas Brutas e as barras vermelhas mostram Devoluções. No setor de farinha de trigo, devoluções elevadas apontam problemas graves: sacaria rasgada no transporte, umidade/infestação no lote, atraso de entrega em padarias ou desvio de especificação técnica (teor de cinzas/glúten).",
         ("vendas_brutas", "devolucoes"),
     ),
     "pmv_desconto": GraphSpec(
-        "Avaliar se movimentos de preço médio vieram acompanhados de mais desconto concedido.",
-        "A linha mostra PMV; as barras mostram desconto. Alta de desconto com PMV em queda merece investigacao de politica comercial.",
+        "Cruzar o Preço Médio de Venda (R$/t) praticado com o volume total de descontos comerciais concedidos pela equipe de vendas.",
+        "A linha mostra a trajetória do PMV e as barras mostram o valor de descontos concedidos. Se os descontos aumentam enquanto o PMV despenca, a equipe comercial está sacrificando margem da empresa para bater metas volumétricas.",
         ("pmv", "desconto"),
     ),
+    "dispersao_vendas": GraphSpec(
+        "Mapear cada transação comercial por volume faturado e preço unitário para auditar a consistência da política de preços do moinho.",
+        "Cada ponto é uma venda. Revela dispersões injustificadas: se clientes pequenos compram farinha mais barato que grandes indústrias consumidoras de volume, a tabela de preços está descontrolada.",
+        ("ton_liquida", "pmv"),
+    ),
+
+    # --- RCAs & GESTÃO DA FORÇA DE VENDAS ---
     "quadrante_vendedores": GraphSpec(
-        "Comparar vendedores em dois eixos de performance escolhidos na tela.",
-        "A posição mostra os eixos selecionados; o tamanho da bolha mostra receita; a cor mostra margem proxy. As medianas dividem o grupo comparável.",
+        "Segmentar os representantes comerciais (RCAs) em quatro quadrantes de eficiência, cruzando volume financeiro gerado contra a margem ou PMV praticado.",
+        "As linhas tracejadas representam as medianas da equipe. O quadrante superior direito reúne os RCAs 'Campeões' (alto volume e alta rentabilidade). O inferior direito aponta 'Tiradores de Pedido' (alto volume com margem destruída por desconto). O superior esquerdo indica 'Especialistas de Nicho'.",
         ("receita_liquida", "margem_proxy_pct"),
     ),
+    "evolucao_vendedores": GraphSpec(
+        "Rastrear a série histórica de faturamento dos principais RCAs para avaliar estabilidade, sazonalidade e risco de perda de carteira.",
+        "Linhas temporais individuais mostram a consistência de cada vendedor. Quedas contínuas em um RCA apontam perda de clientes para concorrentes regionais ou desmotivação do representante.",
+        ("receita_liquida",),
+    ),
+    "concentracao_carteira": GraphSpec(
+        "Avaliar o grau de dependência da carteira de cada RCA em relação aos seus maiores clientes compradores.",
+        "Barras indicam a fatia do faturamento gerada pelos 3 maiores clientes do RCA. Vendedores com mais de 70% de concentração em 1 ou 2 clientes representam alto risco operacional para o moinho.",
+        ("participacao_top3",),
+    ),
+
+    # --- CLIENTES, COORTES & SAÚDE DA BASE ---
     "movimento_base": GraphSpec(
-        "Acompanhar a saude da base de clientes ao longo do tempo.",
-        "Ativos mostram clientes com movimento no mês; novos são primeiras compras; reativados voltaram após longo intervalo sem compra.",
+        "Acompanhar a saúde da base ativa de padarias e indústrias compradoras: Clientes Ativos Recorrentes, Novos Entrantes e Clientes Reativados.",
+        "Barras empilhadas mostram a composição da base mês a mês. Se a base cresce apenas por novos clientes mas a taxa de inativação (churn) é alta, o moinho tem um 'balde furado' comercial.",
         ("ativos", "novos", "reativados"),
     ),
     "matriz_clientes": GraphSpec(
-        "Priorizar clientes combinando tamanho atual e crescimento ou retração.",
-        "Quanto mais à direita, maior participação. Acima de zero cresce; abaixo de zero retrai. Clientes grandes em queda pedem investigação primeiro.",
+        "Priorizar a carteira de clientes cruzando Participação no Faturamento (% Share) contra Taxa de Crescimento/Queda de Compras.",
+        "Eixo X: Tamanho do cliente. Eixo Y: Variação percentual de compras. Clientes no quadrante inferior direito (grandes padarias comprando menos) exigem visita técnica e comercial imediata da gerência.",
         ("participacao_pct", "variacao_pct", "valor_b"),
     ),
     "rfm_scatter": GraphSpec(
-        "Ler recência e frequência para identificar clientes saudáveis, em risco ou pouco explorados.",
-        "Menor recência e maior frequência indicam relacionamento mais ativo. O tamanho representa receita e a cor resume o score RFM.",
+        "Segmentar os clientes pelo modelo RFM (Recência da última compra, Frequência de pedidos e Valor financeiro total acumulado).",
+        "Eixo X: Dias sem comprar (Recência). Eixo Y: Quantidade de meses com compras (Frequência). Tamanho da bolha: Faturamento. Separa clientes fiéis, contas em risco de abandono e compradores eventuais.",
         ("recencia_dias", "frequencia_meses", "receita", "score_total"),
     ),
     "cross_sell": GraphSpec(
-        "Encontrar clientes com baixa diversidade de compra e potencial de cross-sell.",
-        "Poucos produtos com receita relevante indicam concentracao de carteira; muitos produtos sugerem relacionamento mais amplo.",
+        "Mapear o potencial de ampliação de catálogo (cross-sell) em clientes que atualmente compram apenas um único tipo de produto.",
+        "Identifica clientes industriais e padarias de alto volume que compram apenas Farinha Comum, abrindo oportunidade para os RCAs ofertarem Pré-Misturas, Farinhas Integrais ou Farelo de Trigo.",
         ("produtos", "receita_liquida", "ton_liquida"),
     ),
     "positivados_mes": GraphSpec(
-        "Medir o ritmo mensal de entrada de novos clientes.",
-        "Cada barra é uma coorte de primeira compra. Picos isolados devem ser separados de mudanças sustentadas de aquisição.",
+        "Medir a taxa de abertura de novas contas comerciais (primeira compra histórica no Moinho) em cada mês.",
+        "Cada barra representa a safra (coorte) de novos clientes conquistados. Permite avaliar a efetividade de campanhas de prospecção e expansão de território.",
         ("positivados",),
     ),
-    "receita_positivados": GraphSpec(
-        "Avaliar a receita gerada pelos clientes novos ao longo do tempo.",
-        "A linha mostra o valor associado aos positivados do mês. Compare com quantidade de clientes para diferenciar volume de entrada e qualidade da entrada.",
-        ("vlrtot_positivados",),
-    ),
-    "perc_positivados": GraphSpec(
-        "Medir o peso dos clientes novos dentro da receita mensal total.",
-        "Percentuais altos indicam que a receita do mês dependeu mais de clientes recém-entrados.",
-        ("perc_positivados_geral",),
-    ),
-    "taxa_recompra": GraphSpec(
-        "Comparar a taxa de segunda compra entre coortes.",
-        "Coortes recentes tendem a parecer piores por terem menos tempo de maturação. Compare meses com idade semelhante.",
-        ("taxa_recompra_pct",),
-    ),
-    "receita_coorte": GraphSpec(
-        "Comparar o valor medio acumulado por cliente de cada coorte.",
-        "Barras maiores indicam coortes que geraram mais valor medio depois da entrada.",
-        ("receita_media_por_cliente",),
-    ),
     "matriz_retencao": GraphSpec(
-        "Mostrar quanto de cada coorte continua comprando apos a entrada.",
-        "Cada linha é uma coorte; cada coluna é a idade da coorte em meses. Cores mais intensas indicam maior retenção.",
+        "Matriz de Sobrevivência de Coortes: mede que percentual dos clientes recém-abertos continuam comprando no 2º, 3º, 6º e 12º mês após a primeira compra.",
+        "Heatmap onde as linhas são as safras de entrada e as colunas são os meses de vida. Cores mais quentes na diagonal indicam clientes fidelizados; desbotamento rápido aponta problemas no primeiro pedido ou ataque da concorrência.",
         ("retencao_pct",),
     ),
-    "recompra_janelas": GraphSpec(
-        "Comparar recompra em janelas padronizadas de 30 a 365 dias.",
-        "Linhas mais altas indicam recompra mais rapida ou mais frequente. Janelas maiores devem ser sempre iguais ou superiores as menores.",
-        ("taxa_pct",),
+    "taxa_recompra": GraphSpec(
+        "Avaliar a velocidade e fidelidade de recompra das padarias e indústrias recém-conquistadas.",
+        "Mede o percentual de clientes de cada safra que efetuaram uma 2ª compra em até 30, 60 ou 90 dias. No mercado de farinha, quem não recompra no segundo mês raramente volta.",
+        ("taxa_recompra_pct",),
     ),
     "sem_recompra": GraphSpec(
-        "Identificar coortes em que muitos clientes novos nunca voltaram a comprar.",
-        "Barras altas apontam entrada sem retenção. O gráfico indica onde investigar carteira, produto, preço ou atendimento.",
+        "Identificar safras de clientes que compraram apenas uma vez e nunca mais voltaram ('one-shot buyers').",
+        "Barras altas sinalizam problemas de experiência do cliente: produto com desempenho ruim na masseira, atraso no prazo de entrega ou concessão pontual de preço sem continuidade de relacionamento.",
         ("sem_recompra_pct",),
     ),
+
+    # --- CUSTOS & MARGEM PROXY ---
     "comparar_custos": GraphSpec(
-        "Comparar PMV e todos os conceitos de custo no tempo.",
-        "A distância entre as linhas mostra o impacto da escolha da base. Nenhuma linha de custo é oficial sem homologação da Controladoria.",
+        "Confrontar a trajetória do PMV da farinha contra os diferentes conceitos de custo da empresa (CUSGER, CUSVARIAVEL, CUSTOPROD).",
+        "Linhas temporais lado a lado mostram a evolução do custo por tonelada frente à receita. Revela a sensibilidade da margem da moagem a variações nos insumos e energia.",
         ("pmv", "cusger", "cusvariavel"),
     ),
-    "conceitos_media": GraphSpec(
-        "Resumir a diferença média entre os conceitos de custo.",
-        "Barras mais altas indicam conceitos que pressionam mais a margem proxy. A comparação é exploratória até homologação.",
-        ("Média R$/t",),
-    ),
     "custo_pmv_produto": GraphSpec(
-        "Comparar custo por tonelada e PMV produto a produto.",
-        "Pontos proximos ou acima da diagonal economica esperada indicam spread comprimido; a cor mostra margem proxy.",
+        "Cruzar Custo Unitário por Tonelada (R$/t) contra PMV (R$/t) SKU a SKU para auditar o spread de cada produto do portfólio.",
+        "Pontos posicionados acima da linha de custo representam produtos saudáveis; produtos abaixo ou muito próximos da linha operam no prejuízo ou margem perigosamente comprimida.",
         ("custo_por_ton", "pmv", "margem_proxy_pct"),
     ),
-    "menores_margens": GraphSpec(
-        "Listar produtos com menor margem proxy percentual.",
-        "Barras mais baixas ou negativas pedem validação de custo, preço, desconto e outliers antes de conclusão comercial.",
-        ("margem_proxy_pct",),
-    ),
     "spread": GraphSpec(
-        "Mostrar a folga mensal entre PMV e custo por tonelada.",
-        "Barras positivas indicam PMV acima do custo escolhido; barras negativas indicam compressao forte da margem proxy.",
+        "Monitorar o Spread Unitário (Preço Médio de Venda menos Custo por Tonelada em R$/t) mês a mês.",
+        "Barras verdes mostram folga financeira por tonelada moída; barras em declínio acendem alerta para reajuste de tabela ou revisão de contratos de fornecimento.",
         ("spread_por_ton",),
     ),
     "margem_pct": GraphSpec(
-        "Acompanhar a margem proxy percentual no tempo.",
-        "Quedas persistentes indicam perda de spread ou mudanca de mix. A leitura depende da base de custo selecionada.",
+        "Acompanhar a Margem Proxy percentual calculada sobre a receita líquida de farinha ao longo do tempo.",
+        "A curva percentual expressa a rentabilidade média da operação comercial sob a base de custo selecionada no filtro lateral.",
         ("margem_proxy_pct",),
     ),
-    "amplitude_custos": GraphSpec(
-        "Mostrar produtos em que a escolha do conceito de custo mais muda a conclusao.",
-        "Amplitude alta significa que as bases de custo divergem muito entre si. Esses produtos dependem mais de homologacao da Controladoria.",
-        ("amplitude_pct",),
-    ),
+
+    # --- LOGÍSTICA & FRETES ---
     "frete_mensal": GraphSpec(
-        "Acompanhar valor de frete alocado e custo logístico por tonelada no tempo.",
-        "Barras mostram frete total; linha mostra R$/t. Alta de R$/t sem alta de frete total pode indicar cargas menores ou rotas mais caras.",
+        "Acompanhar o valor total de frete alocado às entregas de farinha e o custo logístico médio por tonelada transportada (R$/t).",
+        "As barras mostram o desembolso total com transportadoras e a linha vermelha expressa o Frete R$/t. Subidas no R$/t sem aumento proporcional de volume indicam envio de cargas fracionadas ou rotas ineficientes.",
         ("frete", "frete_por_ton"),
     ),
     "frete_receita": GraphSpec(
-        "Medir o peso do frete alocado sobre a receita.",
-        "Percentual maior significa que a logística consumiu mais da receita do período. Leia junto com o indicador de frete não alocado.",
+        "Medir o impacto percentual das despesas de transporte rodoviário sobre o faturamento líquido da empresa (% Frete/Receita).",
+        "O frete é uma das maiores linhas de custo da moagem (normalmente entre 7% e 14% da receita). Variações para cima reduzem diretamente a margem operacional líquida do Moinho.",
         ("frete_sobre_receita",),
     ),
+    "rotas_caras": GraphSpec(
+        "Identificar os pares de Origem-Destino e municípios com o maior custo de frete por tonelada (R$/t) pago a terceiros.",
+        "Barras em ordem decrescente destacam as rotas que mais encarecem a entrega da saca de farinha, orientando a renegociação de tabelas de frete ou revisão da política FOB/CIF.",
+        ("frete_por_ton",),
+    ),
     "rotas_frete": GraphSpec(
-        "Identificar as rotas que mais consomem valor absoluto de frete.",
-        "Barras maiores indicam maior gasto total. Uma rota relevante em valor não é necessariamente a mais cara por tonelada.",
+        "Listar as rotas e destinos que concentram o maior valor absoluto em Reais (R$) gasto com frete.",
+        "Permite focar as negociações com transportadores nos trajetos de maior volume financeiro da malha logística.",
         ("frete",),
     ),
-    "rotas_caras": GraphSpec(
-        "Identificar rotas com maior custo logístico por tonelada.",
-        "O filtro mínimo de tonelagem reduz distorção por viagens muito pequenas. Compare com distância e perfil de carga antes de concluir.",
-        ("frete_por_ton",),
-    ),
-    "boxplot_uf": GraphSpec(
-        "Comparar a dispersão do frete por tonelada entre UFs de destino.",
-        "Caixas largas e muitos pontos extremos indicam alta variabilidade dentro da mesma UF.",
-        ("frete_por_ton",),
-    ),
     "dispersao_carga": GraphSpec(
-        "Testar se cargas pequenas custam mais por tonelada.",
-        "Pontos à esquerda e altos indicam notas pequenas com R$/t elevado. A distância e a rota também precisam ser verificadas.",
+        "Avaliar a penalidade de custo de entregas fracionadas: cruza o peso da carga faturada contra o frete unitário por tonelada (R$/t).",
+        "Pontos no canto superior esquerdo (cargas de 1 a 5 toneladas pagando alto R$/t) comprovam a ineficiência de entregas pequenas e justificam a exigência de pedido mínimo para frete CIF.",
         ("ton", "frete_por_ton", "frete"),
     ),
-    "faixas_carga_gr": GraphSpec(
-        "Comparar o R$/t mediano por faixas de tamanho da carga.",
-        "Barras maiores em faixas pequenas reforçam a hipótese de perda de escala logística.",
-        ("rs_por_ton_mediano",),
-    ),
+
+    # --- MATÉRIA-PRIMA: TRIGO EM GRÃO ---
     "series_trigo": GraphSpec(
-        "Comparar trigo, custos e PMV no mesmo eixo temporal.",
-        "Curvas que se movem juntas sugerem repasse ou pressão de custo; a página é exploratória e não prova causalidade.",
+        "Analisar o ciclo de repasse de custos: correlaciona o preço de compra do trigo em grão (R$/t) com os custos de produção e o PMV praticado na saca de farinha.",
+        "Permite diagnosticar a defasagem temporal (lag de 30 a 90 dias) necessária para que altas ou baixas no mercado de commodities de trigo sejam absorvidas no preço final de venda.",
         ("trigo_preco_medio", "pmv", "cusger_por_ton"),
     ),
+    "base_100": GraphSpec(
+        "Comparar a velocidade relativa de variação entre o Preço do Trigo, Custo de Moagem e Preço da Farinha com base normalizada em 100.",
+        "Todas as séries iniciam em 100 no primeiro mês. Se a linha do trigo sobe 20% e a da farinha sobe apenas 5%, o moinho está absorvendo o custo e comprimindo sua margem.",
+        (),
+    ),
     "compra_trigo": GraphSpec(
-        "Mostrar o volume mensal de compra de trigo.",
-        "Picos e vales ajudam a separar efeito de compra, estoque e custo médio observado.",
+        "Acompanhar as compras mensais de trigo em grão (toneladas) para garantir o abastecimento contínuo da moagem.",
+        "Picos de compras indicam momentos de estocagem estratégica aproveitando janelas de preços favoráveis na safra nacional ou importada.",
         ("trigo_ton_comprada",),
     ),
     "estoque_trigo": GraphSpec(
-        "Acompanhar o estoque fisico de trigo disponivel no tempo.",
-        "Mudanças no estoque podem suavizar ou atrasar o efeito do preço de compra sobre custo e PMV.",
+        "Monitorar o volume físico de trigo em grão armazenado nos silos da planta industrial.",
+        "Garante visibilidade sobre a autonomia de moagem (dias de estoque) para evitar paradas não planejadas da fábrica.",
         ("trigo_ton_estoque",),
     ),
-    "base_100": GraphSpec(
-        "Comparar variações relativas entre séries com unidades diferentes.",
-        "Todas as séries partem de 100. Acima de 100 cresceu contra o primeiro mês; abaixo de 100 caiu.",
-        (),
-    ),
-    "correlacao_defasagem": GraphSpec(
-        "Testar em qual defasagem mensal duas séries se movem mais juntas.",
-        "Valores perto de 1 ou -1 indicam relação linear forte; perto de 0 indicam baixa relação. Correlação não prova causa.",
-        ("correlacao", "defasagem_meses"),
-    ),
-    "dispersao_trigo": GraphSpec(
-        "Visualizar a relação direta entre duas séries sem defasagem.",
-        "Pontos alinhados sugerem associação linear. Dispersão alta indica que outros fatores explicam parte do movimento.",
-        (),
-    ),
-    "reconciliacao_mensal": GraphSpec(
-        "Mostrar a divergência mensal entre modelo analítico e fonte gerencial.",
-        "A linha deve ficar dentro da tolerância definida. Picos indicam meses que precisam de explicação antes de apresentar.",
-        ("diff_pct",),
-    ),
-    "orcado_realizado": GraphSpec(
-        "Comparar o valor realizado contra o orçamento da fonte gerencial 161.",
-        "As barras lado a lado mostram se o realizado ficou acima ou abaixo do planejado em cada mês.",
-        ("REALIZADO", "ORÇADO"),
-    ),
-    # Potencial de Mercado MG e Territórios
+
+    # --- POTENCIAL DE MERCADO & EXPANSÃO EM MINAS GERAIS (ESTUDO ESTRATÉGICO) ---
     "c2_quadrante_rca": GraphSpec(
-        "Avaliar a produtividade de cada RCA confrontando o potencial econômico do território recebido contra a venda real extraída.",
-        "Eixo X: Potencial estimado do território em t/mês. Eixo Y: Venda média mensal realizada (t/mês). Tamanho: Quantidade de cidades atribuídas. Cor: % de cidades ativadas com venda. Acima da diagonal indica alta eficiência comercial; abaixo indica território subaproveitado.",
+        "Avaliar a produtividade real de cada RCA: confronta o Potencial Econômico do Território recebido (demanda estimada em t/mês) contra a Venda Real entregue (t/mês).",
+        "Eixo X: Potencial total do território em t/mês. Eixo Y: Venda média realizada em t/mês. Tamanho da bolha: Qtd de cidades atribuídas na planilha. Cor: % de ativação de cidades. Vendedores acima da diagonal extraem alta fatia do território; abaixo da diagonal revelam carteiras inchadas e subaproveitadas.",
         ("teto_t_mes", "venda_t_mes", "cidades_atribuidas", "ativacao_pct"),
     ),
     "c2_territorio": GraphSpec(
-        "Mapear a quantidade de representantes comerciais designados para cada município de Minas Gerais.",
-        "Mede a intensidade de cobertura pretendida pela empresa com base na planilha de territórios. Cores mais escuras indicam cidades disputadas por múltiplos RCAs; áreas cinzas indicam cidades sem nenhum responsável formal.",
+        "Mapear a intensidade de cobertura pretendida pela empresa em cada município de MG com base na planilha de representação comercial.",
+        "Cores mais escuras indicam municípios com múltiplos RCAs cadastrados; áreas em cinza claro evidenciam municípios sem nenhum responsável formal designado.",
         ("qtd_representantes",),
     ),
     "pareto_cidades_mg": GraphSpec(
-        "Analisar a concentração de vendas de farinha entre os 853 municípios de Minas Gerais.",
-        "As barras mostram o volume vendido por cidade em ordem decrescente; a linha mostra o percentual acumulado. Identifica quantas poucas cidades concentram 80% do faturamento da empresa.",
+        "Medir o grau de concentração geográfica das vendas de farinha entre os 853 municípios de Minas Gerais.",
+        "As barras mostram o volume vendido por município e a linha vermelha acumula o percentual. Evidencia que a maior parte das toneladas está concentrada em poucos centros urbanos e que o interior permanece inexplorado.",
         ("ton_farinha",),
     ),
     "c3_potencial": GraphSpec(
-        "Estimar a demanda total de consumo de farinha de trigo (t/mês) por município.",
-        "Calculado a partir do número de estabelecimentos cadastrados no CEMPRE/IBGE multiplicado pelos coeficientes médios de consumo real observados na carteira do Moinho.",
+        "Estimar a demanda total de consumo de farinha de trigo (t/mês) de cada cidade mineira baseada no cadastro oficial de empresas do IBGE/CEMPRE.",
+        "Calcula o consumo econômico real multiplicando a contagem de padarias, confeitarias, fábricas de massas e atacados pelos coeficientes de consumo observados na operação do Moinho.",
         ("teto_t_mes",),
     ),
     "c3_teto_segmentos": GraphSpec(
-        "Identificar quais segmentos econômicos puxam o volume potencial de farinha no estado.",
-        "Compara o teto capturável entre Panificação, Fabricação de Biscoitos/Massas e Canais Atacadistas/Distribuidores para orientar o foco do portfólio de produtos.",
+        "Identificar quais segmentos produtivos geram maior demanda de farinha no estado de MG.",
+        "Compara o volume capturável entre Panificação Tradicional (sacaria), Indústria de Biscoitos/Massas (granel/sacos) e Atacados/Distribuidores (food service) para direcionar o foco do portfólio fabril.",
         ("teto_t_mes", "estabelecimentos"),
     ),
     "white_space_mapa": GraphSpec(
-        "Classificar os municípios mineiros nos 4 quadrantes da matriz estratégica Potencial × Presença de Vendas.",
-        "Separa o estado em: White Space Prioritário (Alto Potencial, Baixa Venda), Território Consolidado (Alto Potencial, Alta Venda), Mercado Maduro/Nicho (Baixo Potencial, Alta Venda) e Baixa Prioridade.",
+        "Classificar os 853 municípios de MG nos 4 quadrantes estratégicos da Matriz Potencial × Presença de Vendas.",
+        "Separa o estado em: White Space Prioritário (Alto Potencial, Baixa Presença - Alvo de Expansão), Território Consolidado (Alto Potencial, Alta Venda - Defesa de Carteira), Mercado de Nicho e Baixa Prioridade.",
         ("quadrante", "teto_t_mes", "venda_t_mes"),
     ),
     "cidades_prioritarias": GraphSpec(
-        "Ranquear as 15 cidades com maior volume de espaço não atendido (White Space) em Minas Gerais.",
-        "Lista os municípios onde existe a maior lacuna matemática entre o consumo estimado de farinha e a venda atual do Moinho, priorizando alvos imediatos de prospecção.",
+        "Ranquear as 15 cidades com maior volume absoluto de espaço não atendido (White Space) em Minas Gerais.",
+        "Lista os municípios prioritários onde a diferença entre o mercado consumidor existente e a venda atual do Moinho é máxima, orientando a abertura imediata de novas rotas comerciais.",
         ("espaco_t_mes", "teto_t_mes", "venda_t_mes"),
+    ),
+    "reconciliacao_mensal": GraphSpec(
+        "Conferir a aderência e reconciliação mensal entre o modelo de dados analítico e os relatórios gerenciais da empresa.",
+        "Linha de divergência percentual (diff %). Picos fora da margem de tolerância exigem auditoria antes da apresentação de números à diretoria.",
+        ("diff_pct",),
     ),
 }
 
@@ -484,11 +470,182 @@ def analisar(
 
 
 
+TITULOS_SECOES: dict[str, str] = {
+    # --- VISÃO GERAL ---
+    "receita e volume": (
+        "**🎯 Racional do Moinho:** Confronta o faturamento bruto em R$ com a tonelagem de farinha e subprodutos entregues.\n\n"
+        "**📊 Como Ler:** Linha = Receita Líquida (R$); Barras = Volume (t). Se a receita sobe descolada do volume, o moinho teve ganho de PMV (reajuste de preço de saca). Se o volume sobe e a receita cai, houve queima de preço por descontos ou escoamento de farelo/farinhas de baixo valor."
+    ),
+    "pmv mensal": (
+        "**🎯 Racional do Moinho:** Preço Médio de Venda por tonelada (R$/t) da farinha. É o indicador vital da saúde financeira da moagem.\n\n"
+        "**📊 Como Ler:** Acompanhe a trajetória mensal frente ao custo do trigo em grão. Quedas contínuas em meses de safra apontam incapacidade de repassar custos ou perda de competitividade frente a outros moinhos."
+    ),
+    "mix por classificacao": (
+        "**🎯 Racional do Moinho:** Como as famílias de produto (Farinha Panificação 25/50kg, Granel, Pré-Misturas, Doméstica e Farelo) dividem a capacidade de moagem da planta.\n\n"
+        "**📊 Como Ler:** Área 100% empilhada. O objetivo da gestão é ampliar o espaço de Farinhas Especiais e Pré-Misturas (maior margem) sem perder a base de farinhas industriais que garante a diluição do custo fixo da fábrica."
+    ),
+    "maiores variacoes vs. periodo anterior": (
+        "**🎯 Racional do Moinho:** Decomposição da variação da receita entre Efeito Volume (vendeu mais sacas) e Efeito Preço (vendeu saca mais cara).\n\n"
+        "**📊 Como Ler:** Gráfico Cascata. Barras verdes aumentam a receita; barras vermelhas reduzem. Revela se o crescimento do período veio de esforço comercial de positivação ou de repasse inflacionário de tabela."
+    ),
+
+    # --- POTENCIAL DE MERCADO MG (ESTUDO ESTRATÉGICO) ---
+    "as tres camadas, lado a lado": (
+        "**🎯 Racional do Moinho:** Visão tridimensional integrada do estado de Minas Gerais.\n\n"
+        "**📊 Como Ler:**\n"
+        "• Camada 1 (Verde): Venda Real observada (onde o Moinho entrega farinha hoje).\n"
+        "• Camada 2 (Roxo): Território Declarado dos RCAs (onde a empresa acha que tem cobertura comercial).\n"
+        "• Camada 3 (Laranja): Potencial de Mercado (onde estão as padarias, confeitarias e indústrias cadastradas no IBGE)."
+    ),
+    "concentracao: quanto do negocio depende de quao poucas cidades": (
+        "**🎯 Racional do Moinho:** Curva de Pareto municipal da farinha de trigo em MG.\n\n"
+        "**📊 Como Ler:** As barras mostram as toneladas vendidas por cidade em ordem decrescente; a linha mostra o percentual acumulado. Identifica quantas poucas cidades concentram 80% da farinha do moinho e expõe a dependência territorial da operação."
+    ),
+    "camada 2 · territorio declarado dos representantes": (
+        "**🎯 Racional do Moinho:** Malha de cobertura pretendida com base na planilha de representação comercial.\n\n"
+        "**📊 Como Ler:** Representa a intenção de atendimento comercial. Municípios em roxo escuro possuem múltiplos RCAs cadastrados (risco de canibalização); municípios cinzas não possuem nenhum vendedor responsável designado."
+    ),
+    "territorio recebido x resultado obtido": (
+        "**🎯 Racional do Moinho:** Quadrante de produtividade real do RCA no mercado de farinha.\n\n"
+        "**📊 Como Ler:**\n"
+        "• Eixo X: Potencial estimado de farinha nas cidades do RCA (t/mês).\n"
+        "• Eixo Y: Venda média mensal entregue (t/mês).\n"
+        "• Tamanho da bolha: Qtd de cidades atribuídas.\n"
+        "• Cor: % de cidades ativadas com compra.\n"
+        "• Vendedores ACIMA da diagonal são altamente eficientes na conversão da carteira; ABAIXO da diagonal possuem territórios inchados e subaproveitados."
+    ),
+    "lacunas entre territorio e realidade": (
+        "**🎯 Racional do Moinho:** Diagnóstico de desalinhamento entre o cadastro comercial e as entregas reais de farinha.\n\n"
+        "**📊 Como Ler:**\n"
+        "• Aba Órfãos: Municípios com padarias ativas, sem venda do Moinho e sem RCA designado (White Space puro para contratação de representantes).\n"
+        "• Aba Venda sem Dono: Municípios com faturamento ativo onde nenhum RCA declarou atender a praça (vendas diretas da mesa ou RCA vendendo fora da sua rota).\n"
+        "• Aba Atribuídos sem Venda: Municípios na carteira do RCA onde não houve 1 saca de farinha vendida (território travado para cobrança de positivação)."
+    ),
+    "segmentos: onde esta o volume e por qual canal ele se alcanca": (
+        "**🎯 Racional do Moinho:** Estratificação da demanda de farinha de MG pelos canais de consumo.\n\n"
+        "**📊 Como Ler:** Compara o volume demandado entre Panificação Tradicional (sacaria 25/50kg), Indústrias de Biscoitos/Massas (granel/sacos) e Atacados/Distribuidores (food service) para orientar o foco da produção e embalagem."
+    ),
+    "as 15 cidades de maior espaco nao atendido": (
+        "**🎯 Racional do Moinho:** Ranking dos maiores alvos comerciais em potencial de farinha não capturado em MG.\n\n"
+        "**📊 Como Ler:** Lista os municípios onde a lacuna entre o consumo estimado das padarias e as vendas atuais do Moinho é maior, orientando a expansão imediata de rotas e abertura de novos clientes."
+    ),
+    "as quatro regioes que concentram o espaco": (
+        "**🎯 Racional do Moinho:** Agrupamento regional do potencial de farinha em MG por Regiões Intermediárias do IBGE.\n\n"
+        "**📊 Como Ler:** Identifica as macrorregiões do estado que concentram a maior oportunidade em volume de toneladas/mês para direcionar investimentos em centros de distribuição e logística."
+    ),
+
+    # --- VENDAS, PREÇOS & DESCONTOS ---
+    "vendas x devolucoes": (
+        "**🎯 Racional do Moinho:** Auditoria de recusas e retornos de mercadoria na entrega de farinha.\n\n"
+        "**📊 Como Ler:** Linha = Vendas Brutas (R$); Barras Vermelhas = Devoluções. Devoluções elevadas indicam falhas graves: sacaria rasgada na carga/descarga, umidade/infestação no lote, atraso de entrega em padarias ou lote fora da especificação técnica de panificação (W/glúten/cinzas)."
+    ),
+    "pmv e desconto": (
+        "**🎯 Racional do Moinho:** Avalia se a força de vendas está sustentando o preço de tabela ou 'queimando margem' com concessão de descontos.\n\n"
+        "**📊 Como Ler:** Linha = PMV (R$/t); Barras = Descontos (R$). Se os descontos sobem enquanto o PMV despenca, a equipe comercial está sacrificando a rentabilidade do moinho para bater metas volumétricas de sacas."
+    ),
+    "dispersao de preco": (
+        "**🎯 Racional do Moinho:** Consistência da política comercial e precificação por cliente/transação.\n\n"
+        "**📊 Como Ler:** Cada ponto é uma venda de farinha. Revela distorções graves: se padarias pequenas estão pagando preço unitário menor do que grandes compradores industriais de volume, a tabela de preços do moinho está descalibrada."
+    ),
+
+    # --- RCAs & REPRESENTANTES COMERCIAIS ---
+    "scorecard por vendedor": (
+        "**🎯 Racional do Moinho:** Painel executivo consolidado de produtividade comercial por RCA.\n\n"
+        "**📊 Como Ler:** Avalie em conjunto Receita, Volume (t), PMV (R$/t), Quantidade de Clientes Ativos e Devoluções para separar vendedores de alta performance e valor daqueles focados apenas em commodities de margem baixa."
+    ),
+    "quadrante de vendedores": (
+        "**🎯 Racional do Moinho:** Segmentação estratégica da força de vendas em 4 quadrantes de rentabilidade e volume.\n\n"
+        "**📊 Como Ler:** As linhas tracejadas dividem a equipe pelas medianas. Identifica os 'Vendedores Campeões' (alto volume e alta margem/PMV), 'Tiradores de Pedido' (alto volume com margem destruída) e 'Vendedores de Nicho'."
+    ),
+
+    # --- CLIENTES & COORTES ---
+    "matriz de clientes": (
+        "**🎯 Racional do Moinho:** Priorização da carteira de padarias e indústrias por Tamanho e Tendência de Compra.\n\n"
+        "**📊 Como Ler:** Clientes no quadrante inferior direito (grandes compradores de farinha com compras em queda) exigem intervenção imediata da gerência comercial para evitar a perda da conta para a concorrência."
+    ),
+    "segmentacao rfm": (
+        "**🎯 Racional do Moinho:** Segmentação comportamental da carteira por Recência, Frequência e Valor Financeiro.\n\n"
+        "**📊 Como Ler:** Identifica contas leais de recompra semanal (padarias ativas), clientes com risco iminente de perda (recência alta) e compradores esporádicos de preço."
+    ),
+    "amplitude de mix e cross-sell": (
+        "**🎯 Racional do Moinho:** Oportunidades de diversificação de portfólio no mesmo cliente comprador.\n\n"
+        "**📊 Como Ler:** Identifica padarias de alto consumo que compram apenas Farinha Industrial Comum, abrindo espaço para os RCAs ofertarem Pré-Misturas (pão francês, pão de queijo, bolos) e Farinhas Especiais."
+    ),
+
+    # --- CUSTOS, FRETES & TRIGO ---
+    "comparacao de conceitos de custo": (
+        "**🎯 Racional do Moinho:** Confronto entre o preço de venda da farinha e os conceitos de custo da fábrica (CUSGER, CUSVARIAVEL, CUSTOPROD).\n\n"
+        "**📊 Como Ler:** Mostra a folga financeira e a sensibilidade da margem da moagem a variações nos custos de energia, embalagens e insumos industriais."
+    ),
+    "custo x pmv por produto": (
+        "**🎯 Racional do Moinho:** Auditoria de rentabilidade SKU a SKU do catálogo de farinhas.\n\n"
+        "**📊 Como Ler:** Produtos acima da linha geram margem saudável; produtos abaixo ou muito próximos da linha operam no prejuízo operacional."
+    ),
+    "frete mensal": (
+        "**🎯 Racional do Moinho:** Acompanhamento do custo logístico total e do valor pago por tonelada transportada (R$/t).\n\n"
+        "**📊 Como Ler:** O frete consome de 7% a 14% do faturamento do moinho. Aumentos no R$/t sem aumento de volume indicam envio de cargas fracionadas ou rotas ineficientes."
+    ),
+    "rotas mais caras": (
+        "**🎯 Racional do Moinho:** Identificação das rotas de transporte rodoviário com o maior custo por tonelada.\n\n"
+        "**📊 Como Ler:** Destaca trajetos e destinos que mais encarecem a entrega da saca de farinha, direcionando renegociações com transportadores ou exigência de frete FOB."
+    ),
+    "trigo, custos e pmv": (
+        "**🎯 Racional do Moinho:** Dinâmica de repasse da commodity: correlaciona o preço do trigo em grão com o custo e o PMV da farinha.\n\n"
+        "**📊 Como Ler:** Permite medir o tempo de defasagem (lag de 30 a 90 dias) necessário para que altas na matéria-prima sejam absorvidas no preço final de venda nas padarias."
+    ),
+    "matriz potencial x venda": (
+        "**🎯 Racional do Moinho:** Confronta a Demanda Potencial estimada (IBGE/CEMPRE) contra as Vendas Reais do Moinho em cada município de MG.\n\n"
+        "**📊 Como Ler:**\n"
+        "• Eixo X: Consumo estimado de farinha da cidade (t/mês).\n"
+        "• Eixo Y: Volume faturado pelo Moinho (t/mês).\n"
+        "• Tamanho da bolha: Qtd de estabelecimentos consumidores.\n"
+        "• Cor: % de penetração da base.\n"
+        "• Canto INFERIOR DIREITO: Cidades de altíssimo consumo de farinha onde o Moinho quase não vende — o principal bolsão de White Space de MG."
+    ),
+    "mapa de white space de minas gerais": (
+        "**🎯 Racional do Moinho:** Classificação territorial estratégica dos 853 municípios de Minas Gerais nos 4 quadrantes de atratividade.\n\n"
+        "**📊 Como Ler:**\n"
+        "• Vermelho/Laranja: White Space Prioritário (alto potencial de consumo, baixa venda do Moinho — alvo imediato de expansão).\n"
+        "• Verde: Território Consolidado (alto potencial, alta venda — foco em defesa e aumento de mix).\n"
+        "• Azul: Mercado Maduro/Nicho (baixo potencial, alta venda).\n"
+        "• Cinza: Baixo potencial ou sem estabelecimentos consumidores mapeados."
+    ),
+    "espaco por regiao": (
+        "**🎯 Racional do Moinho:** Distribuição do volume de farinha não capturado (t/mês) por Região Intermediária do IBGE.\n\n"
+        "**📊 Como Ler:** Barras mais longas indicam macrorregiões onde a lacuna entre a demanda total das padarias e as vendas atuais do Moinho é maior, orientando onde abrir novos canais ou ampliar a equipe de RCAs."
+    ),
+    "prioridades municipio a municipio": (
+        "**🎯 Racional do Moinho:** Matriz detalhada município a município para execução do plano de expansão comercial.\n\n"
+        "**📊 Como Ler:** Permite filtrar por quadrante estratégico para obter a lista exata de cidades com maior população, estabelecimentos de panificação e espaço em toneladas/mês para a abordagem dos representantes."
+    ),
+    "ranking por uf": (
+        "**🎯 Racional do Moinho:** Ranking de faturamento e volume físico de farinha expedida por Estado (UF).\n\n"
+        "**📊 Como Ler:** Permite mensurar a dependência do Moinho em relação a Minas Gerais versus a penetração em estados vizinhos (SP, RJ, ES, BA)."
+    ),
+    "ranking municipal": (
+        "**🎯 Racional do Moinho:** Ranking dos municípios que lideram o volume de farinha faturada pelo Moinho em MG.\n\n"
+        "**📊 Como Ler:** Ordena as cidades de maior expedição física, separando praças consolidadas de cidades com volume residual."
+    ),
+    "por regiao intermediaria (ibge)": (
+        "**🎯 Racional do Moinho:** Consolidação das vendas de farinha pelas 13 Regiões Geográficas Intermediárias de Minas Gerais.\n\n"
+        "**📊 Como Ler:** Avalia o equilíbrio da presença comercial da fábrica entre as macrorregiões (Central/BH, Triângulo, Sul de Minas, Zona da Mata, Norte, etc.)."
+    ),
+}
+
+
 def explicacao_grafico(nome: str = "", titulo: str = "") -> str:
     """
     Retorna uma explicação didática, executiva e completa do racional por trás do gráfico ou subgráfico.
     Usada para alimentar o tooltip de ajuda '?' nos títulos de gráficos e seções.
     """
+    # 1. Busca por título de seção exato ou aproximado no catálogo de inteligência de mercado
+    if titulo:
+        norm_t = _normalizar(titulo)
+        for chave_secao, texto_explicativo in TITULOS_SECOES.items():
+            if _normalizar(chave_secao) in norm_t or norm_t in _normalizar(chave_secao):
+                return texto_explicativo
+
+    # 2. Busca em EXATOS
     spec = None
     if nome and nome in EXATOS:
         spec = EXATOS[nome]
@@ -511,14 +668,13 @@ def explicacao_grafico(nome: str = "", titulo: str = "") -> str:
     if not spec:
         label = titulo or nome or "indicadores"
         return (
-            f"**🎯 Objetivo & Racional:**\nExibir a distribuição e evolução de {label} no recorte selecionado.\n\n"
-            f"**📊 Como Funciona:**\nCompare as barras, linhas ou categorias para identificar padrões, sazonalidades ou concentrações.\n\n"
-            f"**🧭 Como Interpretar:**\nValores elevados indicam maior representatividade; quebras de padrão merecem aprofundamento nos filtros."
+            f"**🎯 Racional do Moinho:**\nMonitora a distribuição e evolução comercial de {label} no segmento de farinhas.\n\n"
+            f"**📊 Como Ler:**\nCompare as barras, linhas ou categorias para identificar concentração, dispersão de preços ou oportunidades de positivação regional."
         )
 
     return (
-        f"**🎯 Objetivo & Racional:**\n{spec.objetivo}\n\n"
-        f"**📊 Como Funciona & Leitura:**\n{spec.como_ler}"
+        f"**🎯 Racional do Moinho:**\n{spec.objetivo}\n\n"
+        f"**📊 Como Ler & Interpretar:**\n{spec.como_ler}"
     )
 
 

@@ -516,9 +516,17 @@ def grafico(
     ajuda: str | None = None,
 ) -> None:
     """
-    Renderiza o grafico e, opcionalmente, permite baixar os dados que o geraram
+    Renderiza o grafico com titulo explicativo '?' e, opcionalmente, permite baixar os dados que o geraram
     (exigencia da especificacao secao 32).
     """
+    titulo_fig = ""
+    if hasattr(fig, "layout") and hasattr(fig.layout, "title") and fig.layout.title and fig.layout.title.text:
+        titulo_fig = str(fig.layout.title.text).strip()
+        fig.layout.title.text = ""
+
+    if titulo_fig:
+        secao(titulo_fig, ajuda=ajuda)
+
     st.plotly_chart(fig, use_container_width=True, config={
         "displaylogo": False,
         "toImageButtonOptions": {
