@@ -98,6 +98,13 @@ def _preparar(vendas: pl.DataFrame) -> pl.DataFrame:
         pl.col("data_referencia").dt.strftime("%Y-%m").alias("ano_mes"),
         (pl.col("tipmov") == tipmov_dev).alias("is_devolucao"),
     )
+
+    # Filtra registros posteriores ao escopo temporal homologado (ex.: estornos residuais de 08/2026)
+    cfg_tempo = cfg.get("escopo_temporal") or {}
+    fim_oficial = cfg_tempo.get("fim", "2026-07")
+    if fim_oficial:
+        df = df.filter(pl.col("ano_mes") <= fim_oficial)
+
     return df
 
 

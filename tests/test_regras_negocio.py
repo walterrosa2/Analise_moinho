@@ -42,12 +42,12 @@ def test_grao_item_e_unico():
 
 def test_volume_de_itens_bate_com_a_fonte():
     total = _valor("SELECT COUNT(*) FROM analytics.fact_venda_item")
-    assert total == 204_037, f"Esperado 204.037 itens da fonte, encontrado {total}"
+    assert total == 204_027, f"Esperado 204.027 itens da fonte (ate 2026-07), encontrado {total}"
 
 
 def test_documentos_distintos():
     total = _valor("SELECT COUNT(*) FROM analytics.fact_venda_documento")
-    assert total == 87_274
+    assert total == 87_270
 
 
 # =====================================================================
@@ -102,14 +102,14 @@ def test_tipmov_dominio_fechado():
 
 
 def test_receita_liquida_conhecida():
-    """Total verificado na Fase 0: R$ 518.355.684,26."""
+    """Total verificado na Fase 0 (até 2026-07): R$ 518.356.027,33."""
     receita = float(_valor("SELECT SUM(vlrtot) FROM analytics.fact_venda_item"))
-    assert abs(receita - 518_355_684.26) < 1.0, f"Receita líquida mudou: {receita:,.2f}"
+    assert abs(receita - 518_356_027.33) < 1.0, f"Receita líquida mudou: {receita:,.2f}"
 
 
 def test_volume_liquido_conhecido():
     ton = float(_valor("SELECT SUM(tonliq) FROM analytics.fact_venda_item"))
-    assert abs(ton - 198_790.03) < 1.0, f"Volume líquido mudou: {ton:,.2f}"
+    assert abs(ton - 198_790.14) < 1.0, f"Volume líquido mudou: {ton:,.2f}"
 
 
 # =====================================================================

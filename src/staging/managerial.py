@@ -23,8 +23,10 @@ from src.logging_setup import logger
 
 def construir_positivados() -> dict[str, int]:
     pos = ler_parquet("positivados_mensal")
-    cfg = load_yaml("settings.yaml").get("positivados") or {}
+    cfg_all = load_yaml("settings.yaml")
+    cfg = cfg_all.get("positivados") or {}
     meses_implantacao = set(cfg.get("implantacao_erp") or [])
+    fim_oficial = (cfg_all.get("escopo_temporal") or {}).get("fim", "2026-07")
 
     base = pos.select(
         para_inteiro("ANO").alias("ano"),
@@ -43,6 +45,9 @@ def construir_positivados() -> dict[str, int]:
     ).with_columns(
         pl.col("ano_mes").is_in(list(meses_implantacao)).alias("periodo_implantacao_erp")
     )
+
+    if fim_oficial:
+        base = base.filter(pl.col("ano_mes") <= fim_oficial)
 
     # Explosao da lista "2654, 2941, 3305, ..."
     explodido = (

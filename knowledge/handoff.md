@@ -5,6 +5,26 @@ Histórico em ordem inversa (mais recente no topo). Complementa
 
 ---
 
+## 2026-09-14 06:40 - Antigravity (Gemini 3.7 Flash) - Saneamento e trava do corte temporal em 2026-07
+
+- **Session ID:** 846d2417-c450-4d2c-beb0-b76a8a47741c
+- **Feito:**
+  - Diagnóstico da anomalia do mês 08/2026 nos gráficos ("Receita e Volume" colado no zero): eram apenas 10 linhas residuais de devoluções/estornos de 04/08/2026 totalizando -R$ 343,08 sem vendas correspondentes.
+  - Implementação da trava de corte oficial em `config/settings.yaml` (`escopo_temporal.fim: "2026-07"`).
+  - Filtragem no staging de vendas (`src/staging/sales.py`) e no staging gerencial (`src/staging/managerial.py`) para descartar registros posteriores a 2026-07.
+  - Reexecução do pipeline completo (`scripts/run_pipeline.py --forcar`) atualizando todas as 13 materialized views e tabelas analíticas.
+  - Atualização dos testes de contagem/receita em `tests/test_regras_negocio.py`.
+  - Suíte completa de 103 testes passando (`103 passed`) e `ruff check` limpo.
+- **Nao feito:** nada pendente nesta demanda.
+- **Proximo passo:** apresentação dos slides com dados homologados até 2026-07.
+- **Como validar:**
+  ```powershell
+  $env:PYTHONPATH = "."; .venv\Scripts\python -m pytest
+  .\_start.ps1 -SoApp
+  ```
+
+---
+
 ## 2026-09-05 11:45 - Claude Code (Opus 5) - Publicação em main e preparo de deploy
 
 - **Feito:** auditoria de deploy (skill `railway-deploy-checklist`, adaptada de
