@@ -218,17 +218,22 @@ def _rotulo_amigavel(coluna: str | Any) -> str:
 
 
 def _layout(fig: go.Figure, titulo: str = "", altura: int = 380) -> go.Figure:
-    fig.update_layout(
-        title=titulo or None,
-        height=altura,
-        margin=dict(l=10, r=10, t=40 if titulo else 10, b=10),
-        hovermode="closest",
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
-        colorway=CORES,
-        separators=",.",
-        plot_bgcolor="rgba(0,0,0,0)",
-        paper_bgcolor="rgba(0,0,0,0)",
-    )
+    layout_dict: dict[str, Any] = {
+        "height": altura,
+        "margin": dict(l=10, r=10, t=40 if titulo else 10, b=10),
+        "hovermode": "closest",
+        "legend": dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+        "colorway": CORES,
+        "separators": ",.",
+        "plot_bgcolor": "rgba(0,0,0,0)",
+        "paper_bgcolor": "rgba(0,0,0,0)",
+    }
+    if titulo:
+        layout_dict["title"] = dict(text=str(titulo))
+    else:
+        layout_dict["title"] = dict(text="")
+
+    fig.update_layout(**layout_dict)
     fig.update_xaxes(showgrid=False)
     fig.update_yaxes(gridcolor="rgba(128,128,128,0.15)")
     return fig

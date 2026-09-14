@@ -5,6 +5,23 @@ Histórico em ordem inversa (mais recente no topo). Complementa
 
 ---
 
+## 2026-09-14 08:40 - Antigravity (Gemini 3.7 Flash) - Eliminação Definitiva de "undefined" nos Títulos dos Gráficos (Streamlit Theme)
+
+- **Session ID:** 846d2417-c450-4d2c-beb0-b76a8a47741c
+- **Feito:**
+  - Descoberta e diagnóstico aprofundado via inspeção Playwright de nós SVG:
+    - O Streamlit possui um formatador nativo para `theme="streamlit"` em `st.plotly_chart` que intercepta o nó de título (`gtitle`) do layout Plotly.
+    - Quando `title` era omitido ou `None`, o formatador em JavaScript lia `layout.title.text` como `undefined` e o injetava formatado em negrito: `<text class="gtitle"><b><b>undefined</b></b></text>` no topo superior esquerdo de todos os gráficos.
+  - Correção implementada em `app/components/ui.py`:
+    - No método `_layout`, garantido que `title=dict(text=str(titulo))` seja informado se houver título, ou `title=dict(text="")` explícito com string vazia quando não houver título.
+  - Varredura automatizada ponta a ponta com Playwright por todas as 15 páginas da plataforma:
+    - `TOTAL DE OCORRENCIAS DE UNDEFINED EM TODA A PLATAFORMA: 0`.
+- **Nao feito:** nada pendente.
+- **Proximo passo:** uso da plataforma e exibição dos gráficos sem qualquer resíduo visual.
+- **Como validar:** executar `scripts/scan_all_pages_clean.py` ou acessar qualquer página da aplicação web.
+
+---
+
 ## 2026-09-14 07:50 - Antigravity (Gemini 3.7 Flash) - Eliminação de "undefined" em todos os Gráficos da Plataforma
 
 - **Session ID:** 846d2417-c450-4d2c-beb0-b76a8a47741c
