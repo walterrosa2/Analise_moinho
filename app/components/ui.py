@@ -529,13 +529,14 @@ def grafico(
 
     analise = chart_agent.analisar(nome, dados, fig=fig, ajuda=ajuda)
     if analise is not None:
-        with st.expander("Ajuda e análise IA do gráfico", expanded=False):
-            st.markdown(_paragrafo_html("Objetivo.", analise.objetivo), unsafe_allow_html=True)
-            st.markdown(_paragrafo_html("Como ler.", analise.como_ler), unsafe_allow_html=True)
-            st.markdown("**Leitura do agente especialista.**")
-            st.markdown(_lista_html(analise.analise), unsafe_allow_html=True)
+        with st.expander("💡 Ajuda, Racional & Como Interpretar este Gráfico", expanded=False):
+            st.markdown(f"**🎯 Objetivo & Racional:**\n\n{analise.objetivo}")
+            st.markdown(f"**🧭 Como Ler & Interpretar para Decisão:**\n\n{analise.como_ler}")
+            if analise.analise:
+                st.markdown("**🔍 Diagnóstico dos Dados do Gráfico:**")
+                st.markdown(_lista_html(analise.analise), unsafe_allow_html=True)
             if analise.atencoes:
-                st.markdown("**Atenções.**")
+                st.markdown("**⚠️ Pontos de Atenção & Ressalvas:**")
                 st.markdown(_lista_html(analise.atencoes), unsafe_allow_html=True)
 
     if dados is not None and dados.height:
@@ -544,8 +545,9 @@ def grafico(
             botoes_export(dados, nome, chave=f"g_{nome}")
 
 
-def secao(titulo: str, ajuda: str | None = None) -> None:
-    st.markdown(f"#### {titulo}")
+def secao(titulo: str, ajuda: str | None = None, explicacao: str | None = None) -> None:
+    help_texto = explicacao or chart_agent.explicacao_grafico(titulo=titulo)
+    st.markdown(f"#### {titulo}", help=help_texto)
     if ajuda:
         st.caption(ajuda)
 

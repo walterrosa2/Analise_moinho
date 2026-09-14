@@ -229,7 +229,7 @@ EXATOS: dict[str, GraphSpec] = {
     ),
     "dispersao_trigo": GraphSpec(
         "Visualizar a relação direta entre duas séries sem defasagem.",
-        "Pontos alinhados sugerem associacao linear. Dispersao alta indica que outros fatores explicam parte do movimento.",
+        "Pontos alinhados sugerem associação linear. Dispersão alta indica que outros fatores explicam parte do movimento.",
         (),
     ),
     "reconciliacao_mensal": GraphSpec(
@@ -241,6 +241,42 @@ EXATOS: dict[str, GraphSpec] = {
         "Comparar o valor realizado contra o orçamento da fonte gerencial 161.",
         "As barras lado a lado mostram se o realizado ficou acima ou abaixo do planejado em cada mês.",
         ("REALIZADO", "ORÇADO"),
+    ),
+    # Potencial de Mercado MG e Territórios
+    "c2_quadrante_rca": GraphSpec(
+        "Avaliar a produtividade de cada RCA confrontando o potencial econômico do território recebido contra a venda real extraída.",
+        "Eixo X: Potencial estimado do território em t/mês. Eixo Y: Venda média mensal realizada (t/mês). Tamanho: Quantidade de cidades atribuídas. Cor: % de cidades ativadas com venda. Acima da diagonal indica alta eficiência comercial; abaixo indica território subaproveitado.",
+        ("teto_t_mes", "venda_t_mes", "cidades_atribuidas", "ativacao_pct"),
+    ),
+    "c2_territorio": GraphSpec(
+        "Mapear a quantidade de representantes comerciais designados para cada município de Minas Gerais.",
+        "Mede a intensidade de cobertura pretendida pela empresa com base na planilha de territórios. Cores mais escuras indicam cidades disputadas por múltiplos RCAs; áreas cinzas indicam cidades sem nenhum responsável formal.",
+        ("qtd_representantes",),
+    ),
+    "pareto_cidades_mg": GraphSpec(
+        "Analisar a concentração de vendas de farinha entre os 853 municípios de Minas Gerais.",
+        "As barras mostram o volume vendido por cidade em ordem decrescente; a linha mostra o percentual acumulado. Identifica quantas poucas cidades concentram 80% do faturamento da empresa.",
+        ("ton_farinha",),
+    ),
+    "c3_potencial": GraphSpec(
+        "Estimar a demanda total de consumo de farinha de trigo (t/mês) por município.",
+        "Calculado a partir do número de estabelecimentos cadastrados no CEMPRE/IBGE multiplicado pelos coeficientes médios de consumo real observados na carteira do Moinho.",
+        ("teto_t_mes",),
+    ),
+    "c3_teto_segmentos": GraphSpec(
+        "Identificar quais segmentos econômicos puxam o volume potencial de farinha no estado.",
+        "Compara o teto capturável entre Panificação, Fabricação de Biscoitos/Massas e Canais Atacadistas/Distribuidores para orientar o foco do portfólio de produtos.",
+        ("teto_t_mes", "estabelecimentos"),
+    ),
+    "white_space_mapa": GraphSpec(
+        "Classificar os municípios mineiros nos 4 quadrantes da matriz estratégica Potencial × Presença de Vendas.",
+        "Separa o estado em: White Space Prioritário (Alto Potencial, Baixa Venda), Território Consolidado (Alto Potencial, Alta Venda), Mercado Maduro/Nicho (Baixo Potencial, Alta Venda) e Baixa Prioridade.",
+        ("quadrante", "teto_t_mes", "venda_t_mes"),
+    ),
+    "cidades_prioritarias": GraphSpec(
+        "Ranquear as 15 cidades com maior volume de espaço não atendido (White Space) em Minas Gerais.",
+        "Lista os municípios onde existe a maior lacuna matemática entre o consumo estimado de farinha e a venda atual do Moinho, priorizando alvos imediatos de prospecção.",
+        ("espaco_t_mes", "teto_t_mes", "venda_t_mes"),
     ),
 }
 
@@ -447,87 +483,149 @@ def analisar(
     return GraphAnalysis(objetivo=objetivo, como_ler=como_ler, analise=tuple(analise), atencoes=tuple(atencoes))
 
 
+
+def explicacao_grafico(nome: str = "", titulo: str = "") -> str:
+    """
+    Retorna uma explicação didática, executiva e completa do racional por trás do gráfico ou subgráfico.
+    Usada para alimentar o tooltip de ajuda '?' nos títulos de gráficos e seções.
+    """
+    spec = None
+    if nome and nome in EXATOS:
+        spec = EXATOS[nome]
+    elif titulo:
+        norm_t = _normalizar(titulo)
+        for chave, s in EXATOS.items():
+            if _normalizar(chave) in norm_t or norm_t in _normalizar(chave):
+                spec = s
+                break
+        if not spec:
+            for prefixo, s in PREFIXOS:
+                p_norm = prefixo.replace("_", " ").strip()
+                if p_norm and (p_norm in norm_t or norm_t.startswith(p_norm)):
+                    spec = s
+                    break
+
+    if not spec and nome:
+        spec = _spec(nome, None)
+
+    if not spec:
+        label = titulo or nome or "indicadores"
+        return (
+            f"**🎯 Objetivo & Racional:**\nExibir a distribuição e evolução de {label} no recorte selecionado.\n\n"
+            f"**📊 Como Funciona:**\nCompare as barras, linhas ou categorias para identificar padrões, sazonalidades ou concentrações.\n\n"
+            f"**🧭 Como Interpretar:**\nValores elevados indicam maior representatividade; quebras de padrão merecem aprofundamento nos filtros."
+        )
+
+    return (
+        f"**🎯 Objetivo & Racional:**\n{spec.objetivo}\n\n"
+        f"**📊 Como Funciona & Leitura:**\n{spec.como_ler}"
+    )
+
+
 def ajuda_indicador(titulo: str) -> str | None:
-    """Ajuda objetiva para cartoes/KPIs comuns."""
+    """Ajuda contextual, didática e explicativa para cartões e KPIs."""
     t = _normalizar(titulo)
+
+    # Potencial MG e Territórios
+    if "municipios de mg atendidos" in t:
+        return "Quantidade de municípios em Minas Gerais com pelo menos 1 nota fiscal faturada na janela. Mede a amplitude geográfica da presença comercial do Moinho."
+    if "venda de farinha" in t:
+        return "Média mensal de farinha de trigo (em toneladas/mês) efetivamente faturada e entregue no estado. Base: NF-e do ERP Sankhya."
+    if "mercado enderecavel" in t or "enderecavel" in t:
+        return "Demanda total estimada de farinha de trigo (t/mês) consumida pelas padarias, indústrias e atacados de MG. Base: CEMPRE/IBGE calibrado com dados reais de consumo."
+    if "espaco nao atendido" in t or "espaco" in t:
+        return "Diferença matemática entre o mercado endereçável e o volume que o Moinho já vende (White Space). Representa o potencial de crescimento ainda inexplorado."
+    if "populacao sem nenhuma venda" in t:
+        return "População total residente nos municípios de MG onde o Moinho não realizou nenhuma venda na janela analisada."
+    if "clientes ativos em mg" in t:
+        return "Número de compradores com faturamento no estado no período. Mede a base viva de clientes."
+    if "estabelecimentos consumidores" in t:
+        return "Total de empresas ativas em MG pertencentes aos CNAEs consumidores de farinha (Padarias, Biscoitos, Massas, Atacado). Fonte: IBGE."
+    if "venda e sem rca" in t or "sem rca responsavel" in t or "sem dono" in t:
+        return "Cidades com faturamento ativo onde nenhum RCA declarou a cidade em sua planilha territorial. Indica venda direta de fábrica, canal mesa ou desatualização cadastral."
+    if "rca atribuido e sem venda" in t or "territorio sem venda" in t or "inativo" in t:
+        return "Cidades atribuídas formalmente a um RCA na planilha, mas onde não houve nenhuma venda na janela. Indica território inativo para cobrança de ativação."
+    if "municipios com rca" in t or "com territorio" in t:
+        return "Municípios de MG que possuem pelo menos 1 representante comercial designado pela planilha de territórios da empresa."
+    if "sem rca e sem venda" in t:
+        return "Cidades onde a empresa não possui RCA designado e não realiza vendas (White Space puro para novas contratações ou rotas)."
+
+    # Faturamento e Vendas
     if "receita liquida" in t:
-        return "Soma de VLRTOT no grão de item. Devoluções entram negativas, então o número já é líquido do que voltou."
+        return "Faturamento líquido no grão de item (VLRTOT menos devoluções e abatimentos). Mede o valor financeiro real retido pela empresa."
     if "vendas brutas" in t:
-        return "Receita das vendas antes de abater devoluções. Ajuda a separar venda realizada de retorno."
-    if "receita" in t:
-        return "Valor econômico observado no recorte. Use junto com volume, clientes e concentração para entender a origem do total."
+        return "Faturamento faturado bruto antes de abater devoluções. Permite avaliar o volume original faturado antes de retornos."
+    if "receita total" in t or "receita" in t:
+        return "Volume financeiro total observado no recorte selecionado. Analise junto com toneladas e clientes para avaliar a qualidade do faturamento."
     if "devolu" in t:
-        return "Valor de itens devolvidos, preservado com sinal negativo conforme veio da origem."
+        return "Valor financeiro ou físico de itens devolvidos pelo cliente. Preserva o sinal negativo original da transação fiscal."
     if "volume" in t or "tonelada" in t:
-        return "Soma de TONLIQ. Devoluções reduzem a tonelagem porque a origem já traz o sinal negativo."
+        return "Volume físico de farinha e subprodutos em toneladas líquidas (TONLIQ). Devoluções reduzem a tonelagem proporcionalmente."
     if t == "pmv" or "pmv " in t or "pmv medio" in t:
-        return "Preço médio de venda: receita dividida por toneladas, excluindo bonificações e amostras sem receita por padrão."
+        return "Preço Médio de Venda por tonelada (R$/t): Receita Líquida dividida pelo Volume em toneladas (exclui bonificações sem valor)."
+
+    # Clientes e Coortes
     if "clientes ativos" in t or t == "clientes":
-        return "Clientes distintos com movimento no recorte filtrado. Não é o mesmo que positivados do mês."
+        return "Contagem de CNPJs/CPFs distintos com compras no recorte. Mede a ativação real da carteira."
     if "clientes novos" in t or "positivado" in t:
-        return "Clientes cuja primeira compra ocorreu no período. É entrada de coorte, não cliente ativo recorrente."
+        return "Clientes que realizaram sua primeira compra histórica na empresa neste período. É a porta de entrada de novas safras (coortes)."
     if "documentos" in t:
-        return "Quantidade de notas/documentos distintos. Medidas de documento não devem ser somadas no grão de item."
+        return "Quantidade de notas fiscais (NUNOTA) emitidas. Mede a densidade operacional de faturamento."
     if "produtos" in t:
-        return "Quantidade de produtos distintos no recorte. Ajuda a medir amplitude de mix ou oportunidade de cross-sell."
+        return "Quantidade de SKUs distintos faturados. Avalia a amplitude e dispersão do catálogo no cliente ou região."
     if "desconto" in t:
-        return "Soma de VLRDESC dos itens. Use junto com PMV para avaliar pressão comercial."
+        return "Soma dos descontos comerciais concedidos (VLRDESC). Avalia a pressão sobre o preço de tabela."
+
+    # Logística e Frete
     if "frete total" in t:
-        return "Total dos CT-e de frete de venda carregados. Parte pode não estar vinculada a NF-e de venda."
+        return "Valor total faturado pelos transportadores nos CT-e emitidos. Pode incluir fretes ainda não vinculados a NF-e."
     if "frete alocado" in t:
-        return "Valor de CT-e distribuído às notas de venda vinculadas, com rateio explícito por tonelagem."
+        return "Valor de frete rateado e vinculado diretamente às notas fiscais de venda por tonelada entregue."
     if "nao alocado" in t:
-        return "Parcela do frete sem vínculo confiável com NF-e de venda. Deve limitar conclusões de custo logístico."
+        return "Parcela do frete de transporte que não encontrou vínculo automático com nota fiscal de venda."
     if "sem nf" in t:
-        return "Percentual de CT-e sem chave NF-e de venda informada ou encontrada na base."
+        return "Percentual de conhecimentos de frete (CT-e) sem chave de nota fiscal de venda identificada na base."
     if "sem ordem" in t:
-        return "Percentual de CT-e sem ORDEMCARGA válida. Evidencia por que ordem de carga não é chave confiável."
+        return "Percentual de CT-e sem ordem de carga vinculada."
     if t == "ct e" or "ct-e" in titulo.lower():
-        return "Quantidade de conhecimentos de transporte eletrônicos no recorte logístico."
-    if "custo" in t and "medio" in t:
-        return "Custo médio da base selecionada. Os conceitos ainda não são homologados economicamente."
-    if "custo" in t:
-        return "Custo calculado com a base escolhida no filtro. Nenhuma base é custo oficial sem validação da Controladoria."
-    if "margem proxy" in t:
-        return "Receita comparável menos custo da base selecionada. É margem proxy, não margem contábil oficial."
-    if "spread" in t:
-        return "Diferença entre PMV e custo por tonelada. Mede folga exploratória, não margem contábil."
-    if "recompra" in t:
-        return "Percentual de clientes de uma coorte que voltaram a comprar dentro da janela indicada."
-    if "receita acumulada" in t:
-        return "Receita somada ao longo da vida observada dos clientes/coortes no recorte."
-    if "media mensal" in t:
-        return "Média aritmética mensal do indicador no período analisado."
-    if "ultimo mes" in t:
-        return "Valor observado no mês mais recente disponível dentro do recorte."
-    if "top " in t:
-        return "Participação acumulada dos maiores itens no total do recorte. Mede concentração."
-    if "clientes" in t:
-        return "Quantidade de clientes observada no recorte. Compare com receita e frequência antes de inferir qualidade da carteira."
-    if "vendedores com movimento" in t:
-        return "Vendedores/códigos com venda observada no recorte. Não inclui cadastros sem movimento."
-    if "maior vendedor" in t or "maior cliente" in t:
-        return "Participação do maior item no total. Mede concentração, não explica causa."
+        return "Quantidade de Conhecimentos de Transporte Eletrônico (CT-e) no período."
     if "rotas" in t:
-        return "Quantidade de pares origem-destino com frete alocado no recorte."
+        return "Quantidade de pares distintos de Origem-Destino atendidos pela malha logística da empresa."
     if "r$/t mediano" in t:
-        return "Mediana do frete por tonelada. Menos sensível a rotas extremas do que a média."
-    if "percentil 90" in t or "p90" in t:
-        return "Valor acima do qual estão os 10% casos mais caros. Usado para destacar rotas atípicas."
+        return "Custo mediano de frete por tonelada transportada. A mediana reduz a distorção causada por fretes atípicos de cargas fracionadas."
+
+    # Custos e Margens
+    if "custo" in t and "medio" in t:
+        return "Custo unitário médio por tonelada na base contábil/gerencial selecionada (ex.: CUSGER, CUSVARIAVEL)."
+    if "custo" in t:
+        return "Custo total estimado dos produtos faturados na base selecionada. Atenção: conceito de custo em homologação gerencial."
+    if "margem proxy" in t:
+        return "Margem estimada calculada como Receita Líquida menos o Custo da base selecionada. Trata-se de margem proxy gerencial, não contábil."
+    if "spread" in t:
+        return "Diferença unitária entre o Preço Médio de Venda (R$/t) e o Custo por tonelada (R$/t). Mede a rentabilidade bruta por tonelada."
+
+    # Carteira e RCAs
+    if "vendedores com movimento" in t:
+        return "Quantidade de representantes ou vendedores comerciais que emitiram pedidos faturados no período."
+    if "maior vendedor" in t or "maior cliente" in t:
+        return "Percentual de participação que o principal vendedor ou cliente representa sobre o total do faturamento (medida de risco de concentração)."
+    if "top 5" in t:
+        return "Percentual do faturamento total que está concentrado nas mãos dos 5 maiores vendedores ou clientes."
+    if "recompra" in t:
+        return "Percentual de clientes de uma coorte que efetuaram nova compra dentro da janela avaliada (fidelização)."
     if "recencia" in t:
-        return "Dias desde a última compra observada. Quanto menor, mais recente é o relacionamento."
+        return "Número de dias corridos desde a última compra realizada pelo cliente. Quanto menor, mais quente e ativo o relacionamento."
     if "frequencia" in t:
-        return "Quantidade de meses com compra. Ajuda a diferenciar cliente recorrente de cliente ocasional."
+        return "Quantidade de meses distintos em que o cliente realizou compras dentro do ano/período."
+
+    # Geral
     if "ticket" in t:
-        return "Receita média por documento ou cliente, conforme o contexto da tela."
-    if "verificacao" in t:
-        return "Quantidade de checagens automáticas executadas sobre dados, grãos e reconciliação."
-    if "reconciliacao" in t:
-        return "Pontos comparados contra fonte gerencial dentro da tolerância definida, sem ajuste para forçar encaixe."
+        return "Valor médio faturado por pedido ou nota fiscal (Receita total ÷ Documentos emitidos)."
     if "linhas carregadas" in t:
-        return "Total de linhas importadas nos lotes de carga bem-sucedidos."
+        return "Volume de registros processados e auditados pelo pipeline de dados analítico."
     if "ultima carga" in t:
-        return "Data e hora do lote mais recente registrado pelo pipeline."
+        return "Carimbo de data/hora da última atualização bem-sucedida da base de dados."
+
     return None
 
 

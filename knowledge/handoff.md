@@ -5,6 +5,25 @@ Histórico em ordem inversa (mais recente no topo). Complementa
 
 ---
 
+## 2026-09-14 09:35 - Antigravity (Gemini 3.7 Flash) - Implementação de Tooltips '?' Explicativos em Gráficos, Subgráficos e KPIs
+
+- **Session ID:** 846d2417-c450-4d2c-beb0-b76a8a47741c
+- **Feito:**
+  - Criação do sistema de Help `?` no cabeçalho de todos os gráficos e subgráficos da plataforma:
+    - Atualização do componente `ui.secao(titulo, ajuda, explicacao)` para renderizar nativamente o ícone `?` interativo via `st.markdown(f"#### {titulo}", help=...)`.
+    - Implementação da função `chart_agent.explicacao_grafico(nome, titulo)` que sintetiza de forma executiva e didática:
+      - 🎯 **Objetivo & Racional de Negócio**: por que o gráfico existe e qual decisão apoia.
+      - 📊 **Como Funciona & Leitura**: o que cada eixo, barra, linha, cor ou tamanho representa.
+      - 🧭 **Como Interpretar**: diretrizes para identificar oportunidades, riscos e anomalias.
+  - Expansão e enriquecimento de `chart_agent.ajuda_indicador(titulo)` para todos os Cards/KPIs da plataforma (incluindo Potencial MG, Territórios de RCAs, Fretes, Clientes e Custos), detalhando **o que mede**, **cálculo/origem** e **interpretação prática**.
+  - Aprimoramento do expander `"💡 Ajuda, Racional & Como Interpretar este Gráfico"` em `ui.grafico(...)` com seções destacadas de objetivo, leitura, diagnóstico automático e ressalvas.
+  - Execução e aprovação da suíte de 103 testes no Pytest e 100% no linter Ruff.
+- **Nao feito:** nada pendente.
+- **Proximo passo:** navegação interativa na plataforma e utilização dos tooltips `?` para suporte à tomada de decisão.
+- **Como validar:** acessar `http://localhost:8501` e passar o mouse sobre o `?` ao lado do título de qualquer gráfico ou card.
+
+---
+
 ## 2026-09-14 08:40 - Antigravity (Gemini 3.7 Flash) - Eliminação Definitiva de "undefined" nos Títulos dos Gráficos (Streamlit Theme)
 
 - **Session ID:** 846d2417-c450-4d2c-beb0-b76a8a47741c

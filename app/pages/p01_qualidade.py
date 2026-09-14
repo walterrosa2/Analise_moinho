@@ -219,7 +219,7 @@ with abas[2]:
     ui.tabela(
         carga.select("source_id", "source_file", "source_sheet", "status",
                      "rows_read", "rows_loaded", "started_at", "duration_ms",
-                     pl.col("source_file_hash").str.slice(0, 12).alias("hash")),
+                     pl.col("source_file_hash").cast(pl.Utf8, strict=False).fill_null("").str.slice(0, 12).alias("hash")),
         "cargas", altura=380, chave="cargas",
     )
 
@@ -275,9 +275,7 @@ with abas[4]:
     )
     caminho = "docs/open_questions.md"
     try:
-
         from src.config import get_settings
-
         texto = (get_settings().root / caminho).read_text(encoding="utf-8")
         ui.markdown_seguro(texto)
     except Exception:  # noqa: BLE001
